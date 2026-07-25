@@ -13,7 +13,32 @@ model User {
   email     String   @unique
   phone     String?
   password  String
-  role      String   @default("ADMIN")
+  role      String   // ADMIN, SCHOOL, PARENT, STUDENT, TEACHER, MERCHANT
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  image       String?
+  sku         String?  @unique
+  vendorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PackageProposal {
+  id             String   @id @default(cuid())
+  teacherName    String
+  teacherPhone   String
+  teacherEmail   String?
+  packageDetails String
+  status         String   @default("pending")
+  teacherId      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
