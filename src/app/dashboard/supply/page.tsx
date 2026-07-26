@@ -24,7 +24,7 @@ interface ProductForm {
 }
 
 const cacheBuster = Date.now();
-const imgUrl = (url?: string) => url ? `${url}?t=${cacheBuster}` : "";
+const imgUrl = (url?: string) => url ? (url.startsWith("data:") ? url : `${url}?t=${cacheBuster}`) : "";
 
 export default function SupplyPage() {
   const [stages, setStages] = useState<Stage[]>([]);
