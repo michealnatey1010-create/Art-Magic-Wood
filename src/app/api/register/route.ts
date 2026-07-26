@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { db } from "@/lib/db";
-import crypto from "crypto";
+import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,23 +11,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "جميع الحقول مطلوبة" }, { status: 400 });
     }
 
-    const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ success: false, message: "البريد الإلكتروني مسجل بالفعل" }, { status: 409 });
     }
 
     const hashed = bcrypt.hashSync(password, 12);
-    const id = crypto.randomBytes(16).toString("hex");
 
-    db.prepare("INSERT INTO users (id, name, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(id, name, email, phone || "", hashed, role);
-
-    const user = db.prepare("SELECT id, name, email, phone, role FROM users WHERE id = ?").get(id) as any;
+    const user = await prisma.user.create({
+      data: { name, email, phone: phone || "", password: hashed, role },
+      select: { id: true, name: true, email: true, phone: true, role: true },
+    });
 
     return NextResponse.json({
       success: true,
       message: "تم التسجيل بنجاح",
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
+      user,
     }, { status: 201 });
   } catch (error) {
     console.error("Registration error:", error);

@@ -1,7 +1,9 @@
-import { db } from "@/lib/db";
+import prisma from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProposalsPage() {
-  const proposals = db.prepare("SELECT * FROM package_proposals ORDER BY created_at DESC").all() as any[];
+  const proposals = await prisma.packageProposal.findMany({ orderBy: { created_at: "desc" } });
 
   return (
     <div className="p-6" dir="rtl">

@@ -1,7 +1,9 @@
 import { getDashboardStats } from "@/lib/db/queries";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardHome() {
-  const stats = getDashboardStats();
+  const stats = await getDashboardStats();
 
   const cards = [
     { label: "المنتجات", value: stats.products, color: "bg-blue-500" },

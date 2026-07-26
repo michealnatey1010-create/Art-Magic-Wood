@@ -13,32 +13,118 @@ model User {
   email     String   @unique
   phone     String?
   password  String
-  role      String   // ADMIN, SCHOOL, PARENT, STUDENT, TEACHER, MERCHANT
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      String   @default("admin")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  merchant_products MerchantProduct[]
+  package_proposals PackageProposal[]
+}
+
+model Stage {
+  id         String      @id @default(cuid())
+  name       String
+  points     Int         @default(0)
+  coverImage String      @default("")
+  price      Float       @default(0)
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  products   Product[]
+
+  @@map("stages")
 }
 
 model Product {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float?
+  image     String   @default("")
+  stage_id  String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  stage     Stage    @relation(fields: [stage_id], references: [id], onDelete: Cascade)
+
+  @@map("products")
+}
+
+model TeacherPackage {
+  id              String          @id @default(cuid())
+  name            String
+  monthly_price   Float
+  quarterly_price Float
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  features        TeacherFeature[]
+
+  @@map("teacher_packages")
+}
+
+model TeacherFeature {
+  id         String         @id @default(cuid())
+  text       String
+  package_id String
+  created_at DateTime       @default(now())
+
+  package    TeacherPackage @relation(fields: [package_id], references: [id], onDelete: Cascade)
+
+  @@map("teacher_features")
+}
+
+model PreorderProduct {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  image     String   @default("")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("preorder_products")
+}
+
+model Library {
+  id         String   @id @default(cuid())
+  name       String
+  email      String
+  commission Float    @default(10)
+  active     Int      @default(1)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("libraries")
+}
+
+model MerchantProduct {
   id          String   @id @default(cuid())
   name        String
-  description String?
-  price       Float
+  description String   @default("")
+  price       Float    @default(0)
   stock       Int      @default(0)
-  image       String?
+  image       String   @default("")
   sku         String?  @unique
-  vendorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  vendor_id   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  vendor      User     @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  @@map("merchant_products")
 }
 
 model PackageProposal {
-  id             String   @id @default(cuid())
-  teacherName    String
-  teacherPhone   String
-  teacherEmail   String?
-  packageDetails String
-  status         String   @default("pending")
-  teacherId      String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  teacher_name    String
+  teacher_phone   String
+  teacher_email   String   @default("")
+  package_details String
+  status          String   @default("pending")
+  teacher_id      String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  teacher         User     @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+
+  @@map("package_proposals")
 }

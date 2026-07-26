@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "لم يتم العثور على منتجات صالحة في الملف" }, { status: 400 });
     }
 
-    const count = createMerchantProducts(vendorId, products);
+    const count = await createMerchantProducts(vendorId, products);
 
     return NextResponse.json({ success: true, message: `تمت إضافة ${count} منتج بنجاح`, count });
   } catch (e) {

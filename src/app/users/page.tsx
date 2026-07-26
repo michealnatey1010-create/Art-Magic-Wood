@@ -1,5 +1,4 @@
-import { db } from "@/lib/db";
-import { cookies } from "next/headers";
+import prisma from "@/lib/prisma";
 
 function getRoleBadge(role: string) {
   const styles: Record<string, string> = {
@@ -19,8 +18,10 @@ function getRoleBadge(role: string) {
   return { cls, label };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function UsersPage() {
-  const users = db.prepare("SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC").all() as any[];
+  const users = await prisma.user.findMany({ orderBy: { created_at: "desc" } });
 
   return (
     <div className="p-6 max-w-6xl mx-auto" dir="rtl">

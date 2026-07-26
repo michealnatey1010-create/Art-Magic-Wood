@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-import { db } from "@/lib/db";
+import prisma from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,16 +9,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "جميع الحقول مطلوبة" }, { status: 400 });
     }
 
-    const teacher = db.prepare("SELECT id, name, phone, email FROM users WHERE id = ?").get(teacherId) as any;
+    const teacher = await prisma.user.findUnique({
+      where: { id: teacherId },
+      select: { id: true, name: true, phone: true, email: true },
+    });
     if (!teacher) {
       return NextResponse.json({ success: false, message: "المعلم غير موجود" }, { status: 404 });
     }
 
-    const id = crypto.randomBytes(16).toString("hex");
-    db.prepare("INSERT INTO package_proposals (id, teacher_name, teacher_phone, teacher_email, package_details, status, teacher_id) VALUES (?, ?, ?, ?, ?, 'pending', ?)")
-      .run(id, teacher.name, teacher.phone, teacher.email || "", packageDetails, teacherId);
-
-    const proposal = db.prepare("SELECT * FROM package_proposals WHERE id = ?").get(id);
+    const proposal = await prisma.packageProposal.create({
+      data: {
+        teacher_name: teacher.name,
+        teacher_phone: teacher.phone || "",
+        teacher_email: teacher.email || "",
+        package_details: packageDetails,
+        status: "pending",
+        teacher_id: teacherId,
+      },
+    });
 
     return NextResponse.json({ success: true, message: "تم إرسال الاقتراح بنجاح", data: proposal });
   } catch (error) {

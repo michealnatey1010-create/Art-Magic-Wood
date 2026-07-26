@@ -8,5 +8,5 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const vendorId = searchParams.get("vendorId");
   if (!vendorId) return NextResponse.json({ error: "vendorId required" }, { status: 400 });
-  return NextResponse.json(getMerchantProducts(vendorId));
+  return NextResponse.json(await getMerchantProducts(vendorId));
 }

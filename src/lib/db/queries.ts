@@ -1,56 +1,90 @@
-import { db } from "./index";
+import prisma from "@/lib/prisma";
 
-export function getUsers(search?: string) {
-  const sql = search
-    ? `SELECT id, name, email, phone, role, created_at FROM users WHERE name LIKE ? OR email LIKE ? ORDER BY created_at DESC`
-    : `SELECT id, name, email, phone, role, created_at FROM users ORDER BY created_at DESC`;
-  const params = search ? [`%${search}%`, `%${search}%`] : [];
-  const users = db.prepare(sql).all(...params) as any[];
-  for (const u of users) {
-    const row = db.prepare("SELECT COUNT(*) as count FROM merchant_products WHERE vendor_id = ?").get(u.id) as any;
-    u.product_count = row.count;
-  }
-  return users;
+export async function getUsers(search?: string) {
+  const users = await prisma.user.findMany({
+    where: search
+      ? {
+          OR: [
+            { name: { contains: search } },
+            { email: { contains: search } },
+          ],
+        }
+      : undefined,
+    orderBy: { created_at: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      created_at: true,
+      _count: { select: { merchant_products: true } },
+    },
+  });
+
+  return users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    role: u.role,
+    created_at: u.created_at,
+    product_count: u._count.merchant_products,
+  }));
 }
 
-export function getUserByEmail(email: string) {
-  return db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
+export async function getUserByEmail(email: string) {
+  return prisma.user.findUnique({ where: { email } });
 }
 
-export function getMerchantProducts(vendorId: string) {
-  return db.prepare("SELECT * FROM merchant_products WHERE vendor_id = ? ORDER BY created_at DESC").all(vendorId);
+export async function getMerchantProducts(vendorId: string) {
+  return prisma.merchantProduct.findMany({
+    where: { vendor_id: vendorId },
+    orderBy: { created_at: "desc" },
+  });
 }
 
-export function getStages() {
-  const stages = db.prepare("SELECT * FROM stages ORDER BY created_at DESC").all() as any[];
-  for (const stage of stages) {
-    stage.products = db.prepare("SELECT * FROM products WHERE stage_id = ? ORDER BY created_at ASC").all(stage.id);
-  }
+export async function getStages() {
+  const stages = await prisma.stage.findMany({
+    orderBy: { created_at: "desc" },
+    include: {
+      products: { orderBy: { created_at: "asc" } },
+    },
+  });
   return stages;
 }
 
-export function getTeacherPackages() {
-  const packages = db.prepare("SELECT * FROM teacher_packages ORDER BY created_at DESC").all() as any[];
-  for (const pkg of packages) {
-    pkg.features = db.prepare("SELECT * FROM teacher_features WHERE package_id = ?").all(pkg.id);
-  }
+export async function getTeacherPackages() {
+  const packages = await prisma.teacherPackage.findMany({
+    orderBy: { created_at: "desc" },
+    include: {
+      features: true,
+    },
+  });
   return packages;
 }
 
-export function getPreOrderProducts() {
-  return db.prepare("SELECT * FROM preorder_products ORDER BY created_at DESC").all();
+export async function getPreOrderProducts() {
+  return prisma.preorderProduct.findMany({
+    orderBy: { created_at: "desc" },
+  });
 }
 
-export function getLibraries() {
-  return db.prepare("SELECT * FROM libraries ORDER BY created_at DESC").all();
+export async function getLibraries() {
+  return prisma.library.findMany({
+    orderBy: { created_at: "desc" },
+  });
 }
 
-export function getDashboardStats() {
-  const products = (db.prepare("SELECT COUNT(*) as count FROM products").get() as any).count;
-  const stages = (db.prepare("SELECT COUNT(*) as count FROM stages").get() as any).count;
-  const packages = (db.prepare("SELECT COUNT(*) as count FROM teacher_packages").get() as any).count;
-  const preorders = (db.prepare("SELECT COUNT(*) as count FROM preorder_products").get() as any).count;
-  const libraries = (db.prepare("SELECT COUNT(*) as count FROM libraries").get() as any).count;
-  const users = (db.prepare("SELECT COUNT(*) as count FROM users").get() as any).count;
+export async function getDashboardStats() {
+  const [products, stages, packages, preorders, libraries, users] =
+    await Promise.all([
+      prisma.product.count(),
+      prisma.stage.count(),
+      prisma.teacherPackage.count(),
+      prisma.preorderProduct.count(),
+      prisma.library.count(),
+      prisma.user.count(),
+    ]);
   return { products, stages, packages, preorders, libraries, users };
 }
