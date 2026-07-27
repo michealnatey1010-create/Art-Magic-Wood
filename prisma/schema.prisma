@@ -128,3 +128,20 @@ model PackageProposal {
 
   @@map("package_proposals")
 }
+
+model Order {
+  id                 String   @id @default(cuid())
+  customer_name      String
+  customer_phone     String
+  customer_address   String   @default("")
+  payment_phone      String   @default("")
+  payment_receipt    String   @default("")
+  items              String   @default("[]")
+  total_amount       Float    @default(0)
+  status             String   @default("pending")
+  notes              String   @default("")
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  @@map("orders")
+}

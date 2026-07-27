@@ -155,3 +155,25 @@ export async function updateLibraryCommission(id: string, commission: number) {
 export async function deleteLibrary(id: string) {
   await prisma.library.delete({ where: { id } });
 }
+
+// ─── Orders ───
+export async function createOrder(data: {
+  customer_name: string;
+  customer_phone: string;
+  customer_address?: string;
+  payment_phone?: string;
+  payment_receipt?: string;
+  items?: string;
+  total_amount?: number;
+  notes?: string;
+}) {
+  return prisma.order.create({ data });
+}
+
+export async function updateOrderStatus(id: string, status: string) {
+  await prisma.order.update({ where: { id }, data: { status } });
+}
+
+export async function deleteOrder(id: string) {
+  await prisma.order.delete({ where: { id } });
+}

@@ -11,6 +11,7 @@ export default async function DashboardHome() {
     { label: "باقات المعلم", value: stats.packages, color: "bg-purple-500" },
     { label: "منتجات الطلب المسبق", value: stats.preorders, color: "bg-yellow-500" },
     { label: "المكتبات الشريكة", value: stats.libraries, color: "bg-pink-500" },
+    { label: "الطلبات", value: stats.orders, color: "bg-orange-500" },
     { label: "المستخدمون", value: stats.users, color: "bg-indigo-500" },
   ];
 

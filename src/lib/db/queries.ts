@@ -76,8 +76,14 @@ export async function getLibraries() {
   });
 }
 
+export async function getOrders() {
+  return prisma.order.findMany({
+    orderBy: { created_at: "desc" },
+  });
+}
+
 export async function getDashboardStats() {
-  const [products, stages, packages, preorders, libraries, users] =
+  const [products, stages, packages, preorders, libraries, users, orders] =
     await Promise.all([
       prisma.product.count(),
       prisma.stage.count(),
@@ -85,6 +91,7 @@ export async function getDashboardStats() {
       prisma.preorderProduct.count(),
       prisma.library.count(),
       prisma.user.count(),
+      prisma.order.count(),
     ]);
-  return { products, stages, packages, preorders, libraries, users };
+  return { products, stages, packages, preorders, libraries, users, orders };
 }
