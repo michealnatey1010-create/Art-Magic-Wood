@@ -145,3 +145,15 @@ model Order {
 
   @@map("orders")
 }
+
+model Notification {
+  id           String   @id @default(cuid())
+  product_id   String
+  product_name String
+  message      String   @default("")
+  status       String   @default("active")
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("notifications")
+}

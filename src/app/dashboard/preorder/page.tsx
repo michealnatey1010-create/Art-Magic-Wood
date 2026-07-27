@@ -13,6 +13,7 @@ export default function PreOrderPage() {
   const [items, setItems] = useState<PreOrderItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", price: "", image: "" });
+  const [notifying, setNotifying] = useState<string | null>(null);
 
   const load = async () => {
     const res = await fetch("/api/dashboard/preorder");
@@ -47,6 +48,16 @@ export default function PreOrderPage() {
     load();
   };
 
+  const handleNotify = async (item: PreOrderItem) => {
+    setNotifying(item.id);
+    await fetch("/api/dashboard/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product_id: item.id, product_name: item.name }),
+    });
+    setNotifying(null);
+  };
+
   return (
     <div>
       <button onClick={() => setShowModal(true)} className="mb-6 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-sm">
@@ -62,8 +73,17 @@ export default function PreOrderPage() {
               <div className="w-full h-36 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400 text-3xl">📦</div>
             )}
             <h3 className="font-bold text-gray-900 text-sm">{item.name}</h3>
-            <p className="text-sm font-mono text-gray-600 mt-1">{item.price} EGP</p>
-            <button onClick={() => handleDelete(item.id)} className="mt-2 text-xs text-red-500 hover:text-red-700">حذف</button>
+            <p className="text-sm font-mono text-gray-600 mt-1">{item.price} EGP (سعر الحجر)</p>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => handleNotify(item)}
+                disabled={notifying === item.id}
+                className="flex-1 px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+              >
+                {notifying === item.id ? "جاري..." : "🔔 إشعار بالتوفر"}
+              </button>
+              <button onClick={() => handleDelete(item.id)} className="px-3 py-1.5 border border-red-300 text-red-600 text-xs rounded-lg hover:bg-red-50">حذف</button>
+            </div>
           </div>
         ))}
       </div>
@@ -78,7 +98,7 @@ export default function PreOrderPage() {
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">السعر</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">سعر الحجر</label>
                 <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" required />
               </div>
               <div>

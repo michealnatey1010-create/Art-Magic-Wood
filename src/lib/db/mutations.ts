@@ -156,6 +156,25 @@ export async function deleteLibrary(id: string) {
   await prisma.library.delete({ where: { id } });
 }
 
+// ─── Notifications ───
+export async function createNotification(data: {
+  product_id: string;
+  product_name: string;
+  message?: string;
+}) {
+  return prisma.notification.create({
+    data: {
+      product_id: data.product_id,
+      product_name: data.product_name,
+      message: data.message || `المنتج (${data.product_name}) متوفر الان. سوف يتم التواصل معكم لاتمام عملية الشراء`,
+    },
+  });
+}
+
+export async function deactivateNotification(id: string) {
+  await prisma.notification.update({ where: { id }, data: { status: "inactive" } });
+}
+
 // ─── Orders ───
 export async function createOrder(data: {
   customer_name: string;

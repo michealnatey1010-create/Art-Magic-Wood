@@ -76,6 +76,13 @@ export async function getLibraries() {
   });
 }
 
+export async function getNotifications() {
+  return prisma.notification.findMany({
+    where: { status: "active" },
+    orderBy: { created_at: "desc" },
+  });
+}
+
 export async function getOrders() {
   return prisma.order.findMany({
     orderBy: { created_at: "desc" },
