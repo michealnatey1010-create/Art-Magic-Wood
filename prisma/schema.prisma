@@ -140,6 +140,7 @@ model Order {
   total_amount       Float    @default(0)
   status             String   @default("pending")
   notes              String   @default("")
+  source             String   @default("")
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
 

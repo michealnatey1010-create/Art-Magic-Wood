@@ -185,6 +185,7 @@ export async function createOrder(data: {
   items?: string;
   total_amount?: number;
   notes?: string;
+  source?: string;
 }) {
   return prisma.order.create({ data });
 }

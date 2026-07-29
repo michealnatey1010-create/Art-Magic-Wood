@@ -83,8 +83,9 @@ export async function getNotifications() {
   });
 }
 
-export async function getOrders() {
+export async function getOrders(source?: string) {
   return prisma.order.findMany({
+    where: source ? { source } : undefined,
     orderBy: { created_at: "desc" },
   });
 }

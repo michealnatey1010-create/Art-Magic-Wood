@@ -3,10 +3,12 @@ import { getOrders } from "@/lib/db/queries";
 import { createOrder, updateOrderStatus, deleteOrder } from "@/lib/db/mutations";
 import { getSession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  return NextResponse.json(await getOrders());
+  const { searchParams } = new URL(req.url);
+  const source = searchParams.get("source") || undefined;
+  return NextResponse.json(await getOrders(source));
 }
 
 export async function POST(req: Request) {

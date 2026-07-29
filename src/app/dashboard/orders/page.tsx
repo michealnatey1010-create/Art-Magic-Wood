@@ -13,6 +13,7 @@ interface Order {
   total_amount: number;
   status: string;
   notes: string;
+  source: string;
   created_at: string;
 }
 
@@ -32,17 +33,38 @@ const statusLabels: Record<string, string> = {
   cancelled: "ملغي",
 };
 
+const sourceLabels: Record<string, string> = {
+  supply: "سبورة المستلزمات",
+  preorder: "الطلب المسبق",
+  teacher: "صندوق المعلم",
+};
+
+const sourceIcons: Record<string, string> = {
+  supply: "📋",
+  preorder: "🛒",
+  teacher: "📦",
+};
+
+const filters = [
+  { value: "", label: "الكل", icon: "📋" },
+  { value: "supply", label: "سبورة المستلزمات", icon: "📋" },
+  { value: "teacher", label: "صندوق المعلم", icon: "📦" },
+  { value: "preorder", label: "الطلب المسبق", icon: "🛒" },
+];
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [filter, setFilter] = useState("");
 
   const load = async () => {
-    const res = await fetch("/api/dashboard/orders");
+    const url = filter ? `/api/dashboard/orders?source=${filter}` : "/api/dashboard/orders";
+    const res = await fetch(url);
     const data = await res.json();
     setOrders(data);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [filter]);
 
   const handleStatus = async (id: string, status: string) => {
     await fetch(`/api/dashboard/orders?id=${id}`, {
@@ -69,6 +91,22 @@ export default function OrdersPage() {
         <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm">
           إجمالي الطلبات: {orders.length}
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {filters.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setFilter(f.value)}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
+              filter === f.value
+                ? "bg-blue-600 text-white shadow"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            {f.icon} {f.label}
+          </button>
+        ))}
       </div>
 
       {orders.length === 0 ? (
@@ -100,6 +138,11 @@ export default function OrdersPage() {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
                           <span>📱 {order.customer_phone}</span>
                           {order.payment_phone && <span>💳 {order.payment_phone}</span>}
+                          {order.source && (
+                            <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
+                              {sourceIcons[order.source]} {sourceLabels[order.source] || order.source}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
