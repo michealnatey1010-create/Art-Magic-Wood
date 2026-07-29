@@ -19,9 +19,19 @@ export async function verifyToken(token: string) {
   }
 }
 
-export async function getSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
+export async function getSession(req?: Request) {
+  let token: string | null = null;
+
+  if (req) {
+    const auth = req.headers.get("authorization");
+    if (auth?.startsWith("Bearer ")) token = auth.slice(7);
+  }
+
+  if (!token) {
+    const cookieStore = await cookies();
+    token = cookieStore.get("session")?.value || null;
+  }
+
   if (!token) return null;
   return verifyToken(token);
 }
