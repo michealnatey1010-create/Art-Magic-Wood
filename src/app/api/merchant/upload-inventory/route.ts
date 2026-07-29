@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { createMerchantProducts } from "@/lib/db/mutations";
+import prisma from "@/lib/prisma";
 import * as XLSX from "xlsx";
 
 export async function POST(req: Request) {
   try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const vendorId = formData.get("vendorId") as string | null;
+    const storeName = formData.get("storeName") as string | null;
+    const storeAddress = formData.get("storeAddress") as string | null;
+    const phone = formData.get("phone") as string | null;
 
     if (!file || !vendorId) {
       return NextResponse.json({ success: false, message: "الملف و vendorId مطلوبان" }, { status: 400 });
@@ -38,11 +37,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "لم يتم العثور على منتجات صالحة في الملف" }, { status: 400 });
     }
 
-    const count = await createMerchantProducts(vendorId, products);
+    let count = 0;
+    await prisma.$transaction(
+      products.map((p) => {
+        const sku = p.sku?.trim() || null;
+        if (sku) {
+          return prisma.merchantProduct.upsert({
+            where: { sku },
+            update: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "" },
+            create: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "", sku, vendor_id: vendorId },
+          });
+        }
+        return prisma.merchantProduct.create({
+          data: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "", vendor_id: vendorId },
+        });
+      })
+    );
+    count = products.length;
 
     return NextResponse.json({ success: true, message: `تمت إضافة ${count} منتج بنجاح`, count });
   } catch (e) {
-    console.error("❌ Upload inventory error:", e);
+    console.error("Upload inventory error:", e);
     return NextResponse.json({ success: false, message: "حدث خطأ أثناء رفع المخزون" }, { status: 500 });
   }
 }

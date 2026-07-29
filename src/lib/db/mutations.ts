@@ -119,6 +119,7 @@ export async function createPreOrderProduct(data: {
   name: string;
   price: number;
   image: string;
+  description?: string;
 }) {
   return prisma.preorderProduct.create({ data });
 }

@@ -74,12 +74,13 @@ model TeacherFeature {
 }
 
 model PreorderProduct {
-  id        String   @id @default(cuid())
-  name      String
-  price     Float
-  image     String   @default("")
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  image       String   @default("")
+  description String   @default("")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   @@map("preorder_products")
 }
@@ -157,4 +158,21 @@ model Notification {
   updated_at   DateTime @updatedAt
 
   @@map("notifications")
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  package_id        String
+  package_name      String   @default("")
+  subscription_type String
+  user_name         String
+  address           String   @default("")
+  phone             String
+  sender_phone      String   @default("")
+  receipt_image     String   @default("")
+  status            String   @default("pending")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("subscriptions")
 }
