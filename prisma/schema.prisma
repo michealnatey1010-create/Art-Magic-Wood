@@ -133,21 +133,21 @@ model PackageProposal {
 }
 
 model Order {
-  id                 String   @id @default(cuid())
-  customer_name      String
-  customer_phone     String
-  customer_address   String   @default("")
-  payment_phone      String   @default("")
-  payment_receipt    String   @default("")
-  items              String   @default("[]")
-  total_amount       Float    @default(0)
-  status             String   @default("pending")
-  notes              String   @default("")
-  source             String   @default("")
-  user_id            String?
-  user               User?    @relation(fields: [user_id], references: [id])
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  source       String   // "stage", "preorder", "teacher_box"
+  itemId       String
+  itemName     String
+  price        Float
+  discount     Float    @default(0)
+  pointsUsed   Int      @default(0)
+  pointsEarned Int      @default(0)
+
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("orders")
 }

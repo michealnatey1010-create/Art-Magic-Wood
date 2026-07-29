@@ -178,15 +178,14 @@ export async function deactivateNotification(id: string) {
 
 // ─── Orders ───
 export async function createOrder(data: {
-  customer_name: string;
-  customer_phone: string;
-  customer_address?: string;
-  payment_phone?: string;
-  payment_receipt?: string;
-  items?: string;
-  total_amount?: number;
-  notes?: string;
-  source?: string;
+  userId: string;
+  source: string;
+  itemId: string;
+  itemName: string;
+  price: number;
+  discount?: number;
+  pointsUsed?: number;
+  pointsEarned?: number;
 }) {
   return prisma.order.create({ data });
 }

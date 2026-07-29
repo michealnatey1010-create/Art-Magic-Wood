@@ -86,7 +86,8 @@ export async function getNotifications() {
 export async function getOrders(source?: string) {
   return prisma.order.findMany({
     where: source ? { source } : undefined,
-    orderBy: { created_at: "desc" },
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
   });
 }
 

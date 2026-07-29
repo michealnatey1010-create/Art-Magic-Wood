@@ -3,29 +3,46 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const { stageId, productId, orderType, userName, address, phone, senderPhone, receiptImage, items, totalAmount } = await req.json();
+    const { userId, source, itemId, itemName, price, discount, pointsUsed } = await req.json();
 
-    if (!userName || !phone) {
-      return NextResponse.json({ success: false, message: "الاسم ورقم الهاتف مطلوبان" }, { status: 400 });
+    if (!userId || !source || !itemId || !itemName) {
+      return NextResponse.json({ success: false, message: "userId, source, itemId, itemName مطلوبون" }, { status: 400 });
     }
 
-    const itemsStr = items ? JSON.stringify(items) : JSON.stringify(orderType === "stage" && productId ? [{ id: productId }] : []);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return NextResponse.json({ success: false, message: "المستخدم غير موجود" }, { status: 404 });
+    }
+
+    const pointsUsedVal = Math.min(pointsUsed || 0, user.points);
+    const discountVal = discount || (pointsUsedVal > 0 ? pointsUsedVal * 0.1 : 0);
+    const pointsEarned = Math.floor((price - discountVal) / 10);
 
     const order = await prisma.order.create({
       data: {
-        customer_name: userName,
-        customer_phone: phone,
-        customer_address: address || "",
-        payment_phone: senderPhone || "",
-        payment_receipt: receiptImage || "",
-        items: itemsStr,
-        total_amount: totalAmount || 0,
-        source: orderType || "",
-        notes: "",
+        userId,
+        source,
+        itemId,
+        itemName,
+        price,
+        discount: discountVal,
+        pointsUsed: pointsUsedVal,
+        pointsEarned,
       },
     });
 
-    return NextResponse.json({ success: true, message: "تم إرسال الطلب بنجاح", orderId: order.id }, { status: 201 });
+    if (pointsUsedVal > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { points: { decrement: pointsUsedVal } },
+      });
+    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: { points: { increment: pointsEarned } },
+    });
+
+    return NextResponse.json({ success: true, message: "تم تقديم الطلب بنجاح", orderId: order.id }, { status: 201 });
   } catch (e) {
     console.error("Order error:", e);
     return NextResponse.json({ success: false, message: "حدث خطأ أثناء تقديم الطلب" }, { status: 500 });

@@ -4,17 +4,17 @@ import React, { useState, useEffect } from "react";
 
 interface Order {
   id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_address: string;
-  payment_phone: string;
-  payment_receipt: string;
-  items: string;
-  total_amount: number;
-  status: string;
-  notes: string;
+  userId: string;
   source: string;
-  created_at: string;
+  itemId: string;
+  itemName: string;
+  price: number;
+  discount: number;
+  pointsUsed: number;
+  pointsEarned: number;
+  status: string;
+  createdAt: string;
+  user: { id: string; name: string; email: string; phone: string };
 }
 
 const statusColors: Record<string, string> = {
@@ -34,27 +34,26 @@ const statusLabels: Record<string, string> = {
 };
 
 const sourceLabels: Record<string, string> = {
-  supply: "سبورة المستلزمات",
+  stage: "سبورة المستلزمات",
   preorder: "الطلب المسبق",
-  teacher: "صندوق المعلم",
+  teacher_box: "صندوق المعلم",
 };
 
 const sourceIcons: Record<string, string> = {
-  supply: "📋",
+  stage: "📋",
   preorder: "🛒",
-  teacher: "📦",
+  teacher_box: "📦",
 };
 
 const filters = [
   { value: "", label: "الكل", icon: "📋" },
-  { value: "supply", label: "سبورة المستلزمات", icon: "📋" },
-  { value: "teacher", label: "صندوق المعلم", icon: "📦" },
+  { value: "stage", label: "سبورة المستلزمات", icon: "📋" },
+  { value: "teacher_box", label: "صندوق المعلم", icon: "📦" },
   { value: "preorder", label: "الطلب المسبق", icon: "🛒" },
 ];
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [filter, setFilter] = useState("");
 
   const load = async () => {
@@ -116,116 +115,64 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => {
-            let itemsDisplay = "—";
-            try {
-              const parsed = JSON.parse(order.items);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                itemsDisplay = parsed.map((i: any) => i.name || i).join("، ");
-              }
-            } catch { /* ignore */ }
-
-            return (
-              <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                        {order.customer_name.charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800">{order.customer_name}</h3>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                          <span>📱 {order.customer_phone}</span>
-                          {order.payment_phone && <span>💳 {order.payment_phone}</span>}
-                          {order.source && (
-                            <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-                              {sourceIcons[order.source]} {sourceLabels[order.source] || order.source}
-                            </span>
-                          )}
-                        </div>
+          {orders.map((order) => (
+            <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {order.user.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">{order.user.name}</h3>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                        <span>📱 {order.user.phone || order.user.email}</span>
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
+                          {sourceIcons[order.source]} {sourceLabels[order.source] || order.source}
+                        </span>
                       </div>
                     </div>
-
-                    {order.customer_address && (
-                      <div className="text-sm text-gray-600 mr-13">
-                        <span className="font-medium">📍 العنوان:</span> {order.customer_address}
-                      </div>
-                    )}
-
-                    <div className="text-sm text-gray-600 mr-13">
-                      <span className="font-medium">🛒 الطلب:</span> {itemsDisplay}
-                    </div>
-
-                    {order.total_amount > 0 && (
-                      <div className="text-sm font-bold text-blue-600 mr-13">
-                        💰 {order.total_amount} ج.م
-                      </div>
-                    )}
-
-                    {order.notes && (
-                      <div className="text-sm text-gray-500 mr-13">
-                        📝 {order.notes}
-                      </div>
-                    )}
-
-                    {order.payment_receipt && (
-                      <div className="mr-13 mt-2">
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="text-sm text-blue-600 hover:text-blue-800 underline"
-                        >
-                          🖼 عرض وصل الدفع
-                        </button>
-                      </div>
-                    )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`}>
-                      {statusLabels[order.status] || order.status}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      🕐 {new Date(order.created_at).toLocaleDateString("ar-EG")}
-                    </span>
+                  <div className="text-sm text-gray-600 mr-13">
+                    <span className="font-medium">🛒 المنتج:</span> {order.itemName}
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <span className="font-bold text-blue-600">💰 {order.price} ج.م</span>
+                    {order.discount > 0 && <span className="text-green-600">خصم: {order.discount} ج.م</span>}
+                    {order.pointsUsed > 0 && <span className="text-purple-600">نقاط مستخدمة: {order.pointsUsed}</span>}
+                    {order.pointsEarned > 0 && <span className="text-orange-600">نقاط مكتسبة: {order.pointsEarned}</span>}
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-2">
-                  {order.status === "pending" && (
-                    <>
-                      <button onClick={() => handleStatus(order.id, "confirmed")} className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">تأكيد الطلب</button>
-                      <button onClick={() => handleStatus(order.id, "cancelled")} className="px-4 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200">إلغاء</button>
-                    </>
-                  )}
-                  {order.status === "confirmed" && (
-                    <button onClick={() => handleStatus(order.id, "shipped")} className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">تم الشحن</button>
-                  )}
-                  {order.status === "shipped" && (
-                    <button onClick={() => handleStatus(order.id, "delivered")} className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">تم التوصيل</button>
-                  )}
-                  <button onClick={() => handleDelete(order.id)} className="px-4 py-1.5 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50">حذف</button>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`}>
+                    {statusLabels[order.status] || order.status}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    🕐 {new Date(order.createdAt).toLocaleDateString("ar-EG")}
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {selectedOrder && selectedOrder.payment_receipt && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setSelectedOrder(null)}>
-          <div className="bg-white rounded-2xl p-4 max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold">وصل الدفع - {selectedOrder.customer_name}</h3>
-              <button onClick={() => setSelectedOrder(null)} className="text-gray-500 hover:text-gray-700 text-xl">✕</button>
+              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-2">
+                {order.status === "pending" && (
+                  <>
+                    <button onClick={() => handleStatus(order.id, "confirmed")} className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">تأكيد الطلب</button>
+                    <button onClick={() => handleStatus(order.id, "cancelled")} className="px-4 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200">إلغاء</button>
+                  </>
+                )}
+                {order.status === "confirmed" && (
+                  <button onClick={() => handleStatus(order.id, "shipped")} className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">تم الشحن</button>
+                )}
+                {order.status === "shipped" && (
+                  <button onClick={() => handleStatus(order.id, "delivered")} className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">تم التوصيل</button>
+                )}
+                <button onClick={() => handleDelete(order.id)} className="px-4 py-1.5 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50">حذف</button>
+              </div>
             </div>
-            <img
-              src={selectedOrder.payment_receipt}
-              alt="وصل الدفع"
-              className="w-full rounded-lg"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
-          </div>
+          ))}
         </div>
       )}
     </div>
