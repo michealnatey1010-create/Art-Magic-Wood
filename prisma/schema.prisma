@@ -14,11 +14,13 @@ model User {
   phone     String?
   password  String
   role      String   @default("admin")
+  points    Int      @default(0)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   merchant_products MerchantProduct[]
   package_proposals PackageProposal[]
+  orders            Order[]
 }
 
 model Stage {
@@ -142,6 +144,8 @@ model Order {
   status             String   @default("pending")
   notes              String   @default("")
   source             String   @default("")
+  user_id            String?
+  user               User?    @relation(fields: [user_id], references: [id])
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
 
