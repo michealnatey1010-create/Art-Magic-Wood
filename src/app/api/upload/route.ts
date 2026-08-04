@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { writeFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import * as path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -8,13 +11,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mime = file.type || "image/png";
-    const dataUrl = `data:${mime};base64,${base64}`;
+    const sub = (formData.get("sub") as string || "general").replace(/[^a-z0-9_-]/gi, "");
+    const baseDir = path.resolve(process.cwd(), "public/uploads");
+    const targetDir = path.join(baseDir, sub);
 
-    console.log("📸 Upload saved as data URL");
-    return NextResponse.json({ url: dataUrl });
+    if (!existsSync(targetDir)) {
+      await mkdir(targetDir, { recursive: true });
+    }
+
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(path.join(targetDir, filename), buffer);
+
+    const url = `/uploads/${sub}/${filename}`;
+    console.log("📸 Upload saved →", url);
+    return NextResponse.json({ url });
   } catch (e) {
     console.error("❌ Upload failed:", e);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
