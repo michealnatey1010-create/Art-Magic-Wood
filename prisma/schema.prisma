@@ -146,6 +146,7 @@ model Order {
   discount     Float    @default(0)
   pointsUsed   Int      @default(0)
   pointsEarned Int      @default(0)
+  receiptImage String?
 
   status       String   @default("pending")
   createdAt    DateTime @default(now())

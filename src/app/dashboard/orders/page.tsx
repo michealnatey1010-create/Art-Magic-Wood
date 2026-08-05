@@ -13,6 +13,7 @@ interface Order {
   pointsUsed: number;
   pointsEarned: number;
   status: string;
+  receiptImage?: string | null;
   createdAt: string;
   user: { id: string; name: string; email: string; phone: string };
 }
@@ -136,6 +137,17 @@ export default function OrdersPage() {
 
                   <div className="text-sm text-gray-600 mr-13">
                     <span className="font-medium">🛒 المنتج:</span> {order.itemName}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-sm text-gray-600">🧾 إيصال الدفع:</span>
+                    {order.receiptImage ? (
+                      <a href={order.receiptImage} target="_blank" rel="noopener noreferrer">
+                        <img src={order.receiptImage} alt="إيصال الدفع" className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition" />
+                      </a>
+                    ) : (
+                      <span className="text-sm text-gray-400">لا يوجد إيصال</span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-4 text-sm">

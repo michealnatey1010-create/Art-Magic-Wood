@@ -2,12 +2,23 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+export async function GET(req: Request) {
+  const session = await getSession(req);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const orders = await prisma.order.findMany({
+    where: { userId: session.id },
+    orderBy: { createdAt: "desc" },
+  });
+  return NextResponse.json({ success: true, data: orders });
+}
+
 export async function POST(req: Request) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const data = await req.json();
-  const { itemId, source, price, itemName } = data;
+  const { itemId, source, price, itemName, receiptImage } = data;
   const usePoints = data.usePoints || 0; // عدد النقاط التي يريد استخدامها
 
   const user = await prisma.user.findUnique({ where: { id: session.id } });
@@ -36,6 +47,7 @@ export async function POST(req: Request) {
       discount,
       pointsUsed: usePoints,
       pointsEarned,
+      receiptImage: receiptImage || null,
       status: "pending",
     },
   });
