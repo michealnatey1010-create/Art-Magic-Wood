@@ -30,7 +30,9 @@ export default function SupplyPage() {
   const [stages, setStages] = useState<Stage[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", price: "", coverImage: "", points: "0", products: [{ name: "", price: "", image: "" }] as ProductForm[] });
-  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState("");
 
   const load = async () => {
     const res = await fetch("/api/dashboard/supply");
@@ -60,32 +62,36 @@ export default function SupplyPage() {
     updateProduct(idx, "image", data.url);
   };
 
-  const uploadCoverImage = async (file: File) => {
-    setUploadingCover(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("sub", "stages");
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    console.log("📸 Cover image URL:", data.url);
-    setForm({ ...form, coverImage: data.url });
-    setUploadingCover(false);
+  const selectCoverImage = (file: File) => {
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch("/api/dashboard/supply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name,
-        coverImage: form.coverImage,
-        price: parseFloat(form.price) || 0,
-        points: parseInt(form.points) || 0,
-        products: form.products.map((p) => ({ name: p.name, price: p.price ? parseFloat(p.price) : undefined, image: p.image })),
-      }),
-    });
+    setUploading(true);
+
+    const fd = new FormData();
+    fd.append("name", form.name);
+    fd.append("points", String(parseInt(form.points) || 0));
+    fd.append("price", String(parseFloat(form.price) || 0));
+    if (coverFile) {
+      fd.append("file", coverFile);
+      fd.append("coverImage", coverFile);
+    }
+
+    try {
+      const res = await fetch("/api/supply-stages", { method: "POST", body: fd });
+      const data = await res.json();
+      console.log("Supply-stage response:", data);
+      if (!data.success) alert(data.message || "حدث خطأ");
+    } finally {
+      setUploading(false);
+    }
+
     setShowModal(false);
+    setCoverFile(null);
+    setCoverPreview("");
     setForm({ name: "", price: "", coverImage: "", points: "0", products: [{ name: "", price: "", image: "" }] });
     load();
   };
@@ -173,10 +179,9 @@ export default function SupplyPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">صورة الغلاف</label>
-                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadCoverImage(e.target.files[0])} className="text-sm" disabled={uploadingCover} />
-                {uploadingCover && <p className="text-xs text-blue-500 mt-1">جاري الرفع...</p>}
-                {form.coverImage && (
-                  <img src={imgUrl(form.coverImage)} alt="" className="w-full h-32 object-cover rounded-lg mt-2" />
+                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && selectCoverImage(e.target.files[0])} className="text-sm" />
+                {coverPreview && (
+                  <img src={coverPreview} alt="" className="w-full h-32 object-cover rounded-lg mt-2" />
                 )}
               </div>
               <div>
@@ -199,7 +204,7 @@ export default function SupplyPage() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border rounded-lg text-sm font-bold">إلغاء</button>
-                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">حفظ</button>
+                <button type="submit" disabled={uploading} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:bg-blue-300">{uploading ? "جاري الرفع..." : "حفظ"}</button>
               </div>
             </form>
           </div>
