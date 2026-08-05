@@ -54,7 +54,8 @@ export async function POST(req: Request) {
     const name = String(formData.get("name") || "");
     const points = parseInt(String(formData.get("points") || "0")) || 0;
     const price = parseFloat(String(formData.get("price") || "0")) || 0;
-    const coverFile = formData.get("coverImage") as File | null;
+    const rawFile = formData.get("coverImage") || formData.get("file");
+    const coverFile = (rawFile && typeof rawFile === "object" && "size" in rawFile ? rawFile : null) as File | null;
 
     if (!name) {
       return NextResponse.json({ success: false, message: "اسم المرحلة مطلوب" }, { status: 400 });
