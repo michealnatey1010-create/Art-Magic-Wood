@@ -4,7 +4,10 @@ import * as XLSX from "xlsx";
 
 export async function POST(req: Request) {
   try {
+    console.log("📦 Received upload request");
     const body = await req.json();
+    console.log("📦 Body:", body);
+
     const {
       merchantId,
       storeName,
@@ -22,17 +25,21 @@ export async function POST(req: Request) {
     }
 
     // جلب الملف من Cloudinary
+    console.log("📦 Fetching file from:", fileUrl);
     const fileRes = await fetch(fileUrl);
     if (!fileRes.ok) {
+      console.error("📦 Failed to fetch file, status:", fileRes.status);
       return NextResponse.json(
         { success: false, message: "تعذر تحميل الملف من الرابط" },
         { status: 400 }
       );
     }
     const buffer = Buffer.from(await fileRes.arrayBuffer());
+    console.log("📦 File fetched, buffer size:", buffer.length);
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+    console.log("📦 Excel rows parsed:", rows.length);
 
     if (rows.length === 0) {
       return NextResponse.json({ success: false, message: "الملف فارغ" }, { status: 400 });
@@ -46,6 +53,7 @@ export async function POST(req: Request) {
       image: String(row.image || row.IMAGE || row.Image || row["الصورة"] || ""),
       sku: String(row.sku || row.SKU || row.Sku || row["الكود"] || ""),
     })).filter((p) => p.name);
+    console.log("📦 Valid products:", products.length);
 
     if (products.length === 0) {
       return NextResponse.json(
@@ -54,21 +62,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // تحديث بيانات المتجر (User) إذا وُجد
-    if (merchantId) {
-      try {
-        await prisma.user.update({
-          where: { id: merchantId },
-          data: {
-            ...(storeName ? { school: storeName } : {}),
-            ...(storeAddress ? { storeLocation: storeAddress } : {}),
-            ...(phone ? { phone } : {}),
-          },
-        });
-      } catch {
-        // تجاهل إذا لم يكن المستخدم موجوداً
-      }
+    // التحقق من وجود التاجر (تجنب أخطاء Foreign Key)
+    const merchant = await prisma.user.findUnique({ where: { id: merchantId } });
+    console.log("📦 Merchant found:", !!merchant);
+    if (!merchant) {
+      return NextResponse.json(
+        { success: false, message: "التاجر غير موجود (merchantId غير صالح)" },
+        { status: 400 }
+      );
     }
+
+    // تحديث بيانات المتجر (User)
+    await prisma.user.update({
+      where: { id: merchantId },
+      data: {
+        ...(storeName ? { school: storeName } : {}),
+        ...(storeAddress ? { storeLocation: storeAddress } : {}),
+        ...(phone ? { phone } : {}),
+      },
+    });
+    console.log("📦 Merchant store details updated");
 
     // حفظ سجل رفع المخزون
     await prisma.merchantInventory.create({
@@ -81,8 +94,9 @@ export async function POST(req: Request) {
         file_name: fileName || "",
       },
     });
+    console.log("📦 MerchantInventory saved");
 
-    let count = 0;
+    console.log("📦 Inserting products...");
     await prisma.$transaction(
       products.map((p) => {
         const sku = p.sku?.trim() || null;
@@ -98,14 +112,17 @@ export async function POST(req: Request) {
         });
       })
     );
-    count = products.length;
+    console.log("📦 Products inserted:", products.length);
 
     return NextResponse.json({
       success: true,
       message: "تم رفع ملف المخزون بنجاح",
     });
   } catch (e) {
-    console.error("Upload inventory error:", e);
-    return NextResponse.json({ success: false, message: "حدث خطأ أثناء رفع المخزون" }, { status: 500 });
+    console.error("❌ Upload inventory error:", e);
+    return NextResponse.json({
+      success: false,
+      message: "خطأ في الخادم: " + (e as Error).message,
+    }, { status: 500 });
   }
 }
