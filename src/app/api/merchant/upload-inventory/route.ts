@@ -4,18 +4,32 @@ import * as XLSX from "xlsx";
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const vendorId = formData.get("vendorId") as string | null;
-    const storeName = formData.get("storeName") as string | null;
-    const storeAddress = formData.get("storeAddress") as string | null;
-    const phone = formData.get("phone") as string | null;
+    const body = await req.json();
+    const {
+      merchantId,
+      storeName,
+      storeAddress,
+      phone,
+      fileUrl,
+      fileName,
+    } = body;
 
-    if (!file || !vendorId) {
-      return NextResponse.json({ success: false, message: "الملف و vendorId مطلوبان" }, { status: 400 });
+    if (!fileUrl || !merchantId) {
+      return NextResponse.json(
+        { success: false, message: "fileUrl و merchantId مطلوبان" },
+        { status: 400 }
+      );
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // جلب الملف من Cloudinary
+    const fileRes = await fetch(fileUrl);
+    if (!fileRes.ok) {
+      return NextResponse.json(
+        { success: false, message: "تعذر تحميل الملف من الرابط" },
+        { status: 400 }
+      );
+    }
+    const buffer = Buffer.from(await fileRes.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = XLSX.utils.sheet_to_json(sheet);
@@ -34,8 +48,39 @@ export async function POST(req: Request) {
     })).filter((p) => p.name);
 
     if (products.length === 0) {
-      return NextResponse.json({ success: false, message: "لم يتم العثور على منتجات صالحة في الملف" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "لم يتم العثور على منتجات صالحة في الملف" },
+        { status: 400 }
+      );
     }
+
+    // تحديث بيانات المتجر (User) إذا وُجد
+    if (merchantId) {
+      try {
+        await prisma.user.update({
+          where: { id: merchantId },
+          data: {
+            ...(storeName ? { school: storeName } : {}),
+            ...(storeAddress ? { storeLocation: storeAddress } : {}),
+            ...(phone ? { phone } : {}),
+          },
+        });
+      } catch {
+        // تجاهل إذا لم يكن المستخدم موجوداً
+      }
+    }
+
+    // حفظ سجل رفع المخزون
+    await prisma.merchantInventory.create({
+      data: {
+        merchant_id: merchantId,
+        store_name: storeName || "",
+        store_address: storeAddress || "",
+        phone: phone || "",
+        file_url: fileUrl,
+        file_name: fileName || "",
+      },
+    });
 
     let count = 0;
     await prisma.$transaction(
@@ -45,17 +90,20 @@ export async function POST(req: Request) {
           return prisma.merchantProduct.upsert({
             where: { sku },
             update: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "" },
-            create: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "", sku, vendor_id: vendorId },
+            create: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "", sku, vendor_id: merchantId },
           });
         }
         return prisma.merchantProduct.create({
-          data: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "", vendor_id: vendorId },
+          data: { name: p.name, price: p.price, stock: p.stock, description: p.description || "", image: p.image || "", vendor_id: merchantId },
         });
       })
     );
     count = products.length;
 
-    return NextResponse.json({ success: true, message: `تمت إضافة ${count} منتج بنجاح`, count });
+    return NextResponse.json({
+      success: true,
+      message: "تم رفع ملف المخزون بنجاح",
+    });
   } catch (e) {
     console.error("Upload inventory error:", e);
     return NextResponse.json({ success: false, message: "حدث خطأ أثناء رفع المخزون" }, { status: 500 });

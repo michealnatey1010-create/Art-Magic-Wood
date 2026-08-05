@@ -21,6 +21,7 @@ model User {
   updated_at DateTime @updatedAt
 
   merchant_products MerchantProduct[]
+  merchant_runs     MerchantInventory[]
   package_proposals PackageProposal[]
   orders            Order[]
 }
@@ -116,6 +117,21 @@ model MerchantProduct {
   vendor      User     @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
 
   @@map("merchant_products")
+}
+
+model MerchantInventory {
+  id            String   @id @default(cuid())
+  merchant_id   String
+  store_name    String   @default("")
+  store_address String   @default("")
+  phone         String   @default("")
+  file_url      String
+  file_name     String   @default("")
+  created_at    DateTime @default(now())
+
+  merchant      User     @relation(fields: [merchant_id], references: [id], onDelete: Cascade)
+
+  @@map("merchant_inventories")
 }
 
 model PackageProposal {
