@@ -38,6 +38,28 @@ export async function deleteStage(id: string) {
   await prisma.stage.delete({ where: { id } });
 }
 
+export async function updateStage(
+  id: string,
+  data: {
+    name: string;
+    points: number;
+    price: number;
+    coverImage?: string;
+    products: { name: string; price?: number; image?: string }[];
+  }
+) {
+  await prisma.stage.update({ where: { id }, data: { name: data.name, points: data.points, price: data.price } });
+
+  await prisma.$transaction([
+    prisma.product.deleteMany({ where: { stage_id: id } }),
+    ...data.products.map((p) =>
+      prisma.product.create({
+        data: { name: p.name, price: p.price ?? 0, image: p.image || "", stage_id: id },
+      })
+    ),
+  ]);
+}
+
 // ─── Teacher Packages ───
 export async function createTeacherPackage(data: {
   name: string;
