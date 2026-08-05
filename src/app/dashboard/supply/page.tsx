@@ -67,18 +67,40 @@ export default function SupplyPage() {
     setCoverPreview(URL.createObjectURL(file));
   };
 
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "my_school_preset");
+    const res = await fetch("https://api.cloudinary.com/v1_1/vyhjq4m7/image/upload", {
+      method: "POST",
+      body: fd,
+    });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error(data.error?.message || "فشل رفع الصورة");
+    console.log("📸 Cloudinary secure_url:", data.secure_url);
+    return data.secure_url;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
+
+    let coverImageUrl = "";
+    if (coverFile) {
+      try {
+        coverImageUrl = await uploadToCloudinary(coverFile);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "فشل رفع الصورة");
+        setUploading(false);
+        return;
+      }
+    }
 
     const fd = new FormData();
     fd.append("name", form.name);
     fd.append("points", String(parseInt(form.points) || 0));
     fd.append("price", String(parseFloat(form.price) || 0));
-    if (coverFile) {
-      fd.append("file", coverFile);
-      fd.append("coverImage", coverFile);
-    }
+    if (coverImageUrl) fd.append("coverImage", coverImageUrl);
 
     try {
       const res = await fetch("/api/supply-stages", { method: "POST", body: fd });
