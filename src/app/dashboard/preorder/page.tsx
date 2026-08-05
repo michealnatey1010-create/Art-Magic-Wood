@@ -15,6 +15,8 @@ export default function PreOrderPage() {
   const [form, setForm] = useState({ name: "", price: "", image: "" });
   const [notifying, setNotifying] = useState<string | null>(null);
 
+  const [uploading, setUploading] = useState(false);
+
   const load = async () => {
     const res = await fetch("/api/dashboard/preorder");
     const data = await res.json();
@@ -23,12 +25,30 @@ export default function PreOrderPage() {
 
   useEffect(() => { load(); }, []);
 
-  const uploadImage = async (file: File) => {
+  const uploadToCloudinary = async (file: File): Promise<string> => {
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    fd.append("upload_preset", "my_school_preset");
+    const res = await fetch("https://api.cloudinary.com/v1_1/vyhjq4m7/image/upload", {
+      method: "POST",
+      body: fd,
+    });
     const data = await res.json();
-    setForm({ ...form, image: data.url });
+    if (!data.secure_url) throw new Error(data.error?.message || "فشل رفع الصورة");
+    console.log("📸 Cloudinary secure_url:", data.secure_url);
+    return data.secure_url;
+  };
+
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setForm({ ...form, image: url });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل رفع الصورة");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +123,8 @@ export default function PreOrderPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">الصورة</label>
-                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])} className="text-sm" />
+                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])} className="text-sm" disabled={uploading} />
+                {uploading && <p className="text-xs text-blue-500 mt-1">جاري الرفع...</p>}
                 {form.image && <img src={form.image} alt="" className="w-20 h-20 rounded object-cover mt-2" />}
               </div>
               <div className="flex gap-3 pt-2">
