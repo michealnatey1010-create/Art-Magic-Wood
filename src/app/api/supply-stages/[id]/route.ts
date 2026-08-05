@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import cloudinary from "cloudinary";
 import prisma from "@/lib/prisma";
 import { updateStage } from "@/lib/db/mutations";
@@ -26,12 +26,13 @@ const uploadToCloudinary = (file: File) =>
       .catch(reject);
   });
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   try {
-    const existing = await prisma.stage.findUnique({ where: { id: params.id } });
+    const existing = await prisma.stage.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ success: false, message: "المرحلة غير موجودة" }, { status: 404 });
     }
@@ -73,12 +74,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       products = [];
     }
 
-    await updateStage(params.id, { name, points, price, coverImage, products });
+    await updateStage(id, { name, points, price, coverImage, products });
 
     return NextResponse.json({
       success: true,
       message: "تم تحديث المرحلة بنجاح",
-      stage: { id: params.id, name, coverImage, points, price },
+      stage: { id, name, coverImage, points, price },
     });
   } catch (e) {
     console.error("Update stage error:", e);
