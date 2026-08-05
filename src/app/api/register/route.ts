@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, email, password, role } = body;
+    const { name, phone, email, password, role, school, storeLocation } = body;
 
     // التحقق من البيانات المطلوبة
     if (!name || !phone || !email || !password || !role) {
@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         role,
         points: 0,
+        school: school || "",
+        storeLocation: storeLocation || "",
       },
     });
 
@@ -54,6 +56,8 @@ export async function POST(req: NextRequest) {
           email: user.email,
           role: user.role,
           points: user.points,
+          school: user.school,
+          storeLocation: user.storeLocation,
         },
       },
       { status: 201 }

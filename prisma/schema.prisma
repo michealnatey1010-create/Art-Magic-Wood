@@ -13,9 +13,11 @@ model User {
   email     String   @unique
   phone     String?
   password  String
-  role      String   @default("admin")
-  points    Int      @default(0)
-  created_at DateTime @default(now())
+  role          String   @default("admin")
+  points        Int      @default(0)
+  school        String   @default("")
+  storeLocation String   @default("")
+  created_at    DateTime @default(now())
   updated_at DateTime @updatedAt
 
   merchant_products MerchantProduct[]

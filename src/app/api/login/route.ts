@@ -22,20 +22,20 @@ export async function POST(req: Request) {
 
     const token = await createToken({ id: user.id, email: user.email, role: user.role });
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       token,
-      user: { id: user.id, name: user.name, phone: user.phone, email: user.email, role: user.role, points: user.points, school: user.school, storeLocation: user.storeLocation },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        points: user.points,
+        school: user.school,
+        storeLocation: user.storeLocation,
+      },
     });
-    response.cookies.set("session", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    return response;
   } catch {
     return NextResponse.json({ success: false, message: "حدث خطأ في الخادم" }, { status: 500 });
   }
