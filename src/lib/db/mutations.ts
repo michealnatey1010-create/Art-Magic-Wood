@@ -150,35 +150,6 @@ export async function deletePreOrderProduct(id: string) {
   await prisma.preorderProduct.delete({ where: { id } });
 }
 
-// ─── Libraries ───
-export async function createLibrary(data: {
-  name: string;
-  email: string;
-  commission: number;
-}) {
-  return prisma.library.create({ data });
-}
-
-export async function toggleLibrary(id: string) {
-  const lib = await prisma.library.findUnique({ where: { id } });
-  if (!lib) throw new Error("Library not found");
-  await prisma.library.update({
-    where: { id },
-    data: { active: lib.active ? 0 : 1 },
-  });
-}
-
-export async function updateLibraryCommission(id: string, commission: number) {
-  await prisma.library.update({
-    where: { id },
-    data: { commission },
-  });
-}
-
-export async function deleteLibrary(id: string) {
-  await prisma.library.delete({ where: { id } });
-}
-
 // ─── Notifications ───
 export async function createNotification(data: {
   product_id: string;

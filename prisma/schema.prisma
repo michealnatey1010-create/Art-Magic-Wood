@@ -90,18 +90,6 @@ model PreorderProduct {
   @@map("preorder_products")
 }
 
-model Library {
-  id         String   @id @default(cuid())
-  name       String
-  email      String
-  commission Float    @default(10)
-  active     Int      @default(1)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@map("libraries")
-}
-
 model MerchantProduct {
   id          String   @id @default(cuid())
   name        String

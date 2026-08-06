@@ -70,12 +70,6 @@ export async function getPreOrderProducts() {
   });
 }
 
-export async function getLibraries() {
-  return prisma.library.findMany({
-    orderBy: { created_at: "desc" },
-  });
-}
-
 export async function getNotifications() {
   return prisma.notification.findMany({
     where: { status: "active" },
@@ -92,15 +86,14 @@ export async function getOrders(source?: string) {
 }
 
 export async function getDashboardStats() {
-  const [products, stages, packages, preorders, libraries, users, orders] =
+  const [products, stages, packages, preorders, users, orders] =
     await Promise.all([
       prisma.product.count(),
       prisma.stage.count(),
       prisma.teacherPackage.count(),
       prisma.preorderProduct.count(),
-      prisma.library.count(),
       prisma.user.count(),
       prisma.order.count(),
     ]);
-  return { products, stages, packages, preorders, libraries, users, orders };
+  return { products, stages, packages, preorders, users, orders };
 }

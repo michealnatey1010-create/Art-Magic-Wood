@@ -10,7 +10,6 @@ const sidebarItems = [
   { href: "/dashboard/supply", label: "سبورة المستلزمات", icon: "📋" },
   { href: "/dashboard/teacher", label: "صندوق المعلم", icon: "📦" },
   { href: "/dashboard/preorder", label: "الطلب المسبق", icon: "🛒" },
-  { href: "/dashboard/marketplace", label: "عمولات المكتبات", icon: "🏪" },
   { href: "/dashboard/orders", label: "الطلبات", icon: "📋" },
   { href: "/dashboard/merchant-inventory", label: "مخزون التجار", icon: "📦" },
   { href: "/dashboard/proposals", label: "مقترحات الحزم", icon: Package },
