@@ -24,6 +24,33 @@ model User {
   merchant_runs     MerchantInventory[]
   package_proposals PackageProposal[]
   orders            Order[]
+  cart              Cart?
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  userId     String     @unique
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      CartItem[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id          String   @id @default(cuid())
+  cart_id     String
+  cart        Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  productId   String
+  productType String
+  productName String
+  price       Float
+  quantity    Int      @default(1)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("cart_items")
 }
 
 model Stage {

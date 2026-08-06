@@ -17,12 +17,12 @@ export async function GET(req: NextRequest) {
     success: true,
     data: proposals.map((p) => ({
       id: p.id,
-      teacher_name: p.teacher_name,
-      teacher_phone: p.teacher_phone,
-      teacher_email: p.teacher_email,
-      package_details: p.package_details,
+      teacherName: p.teacher_name,
+      teacherPhone: p.teacher_phone,
+      teacherEmail: p.teacher_email,
+      packageDetails: p.package_details,
       status: p.status,
-      created_at: p.created_at,
+      createdAt: p.created_at,
     })),
   });
 }
@@ -32,7 +32,14 @@ export async function POST(req: NextRequest) {
     const { teacherId, packageDetails } = await req.json();
 
     if (!teacherId || !packageDetails) {
-      return NextResponse.json({ success: false, message: "جميع الحقول مطلوبة" }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "جميع الحقول مطلوبة",
+          data: null, // ⬅️ إضافة data فارغة
+        },
+        { status: 400 }
+      );
     }
 
     const teacher = await prisma.user.findUnique({
@@ -40,7 +47,14 @@ export async function POST(req: NextRequest) {
       select: { id: true, name: true, phone: true, email: true },
     });
     if (!teacher) {
-      return NextResponse.json({ success: false, message: "المعلم غير موجود" }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: "المعلم غير موجود",
+          data: null,
+        },
+        { status: 404 }
+      );
     }
 
     const proposal = await prisma.packageProposal.create({
@@ -54,9 +68,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, message: "تم إرسال الاقتراح بنجاح", data: proposal });
+    return NextResponse.json({
+      success: true,
+      message: "تم إرسال الاقتراح بنجاح",
+      data: {
+        id: proposal.id,
+        teacherName: proposal.teacher_name,
+        teacherPhone: proposal.teacher_phone,
+        teacherEmail: proposal.teacher_email,
+        packageDetails: proposal.package_details,
+        status: proposal.status,
+      },
+    });
   } catch (error) {
     console.error("Proposal error:", error);
-    return NextResponse.json({ success: false, message: "حدث خطأ: " + (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: "حدث خطأ: " + (error as Error).message,
+        data: null,
+      },
+      { status: 500 }
+    );
   }
 }
