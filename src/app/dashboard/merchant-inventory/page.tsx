@@ -30,6 +30,13 @@ const statusLabels: Record<string, string> = {
 
 export default function MerchantInventoryPage() {
   const [records, setRecords] = useState<InventoryRecord[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const showToast = (type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const load = async () => {
     const res = await fetch("/api/merchant/inventory");
@@ -39,8 +46,31 @@ export default function MerchantInventoryPage() {
 
   useEffect(() => { load(); }, []);
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("هل أنت متأكد من حذف هذا السجل؟")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/merchant/inventory/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "فشل الحذف");
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+      showToast("success", "تم الحذف بنجاح");
+    } catch (e) {
+      showToast("error", e instanceof Error ? e.message : "فشل الحذف");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div>
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-bold ${
+          toast.type === "success" ? "bg-green-600" : "bg-red-600"
+        }`}>
+          {toast.message}
+        </div>
+      )}
       <h2 className="text-2xl font-bold text-gray-800 mb-2">📦 طلبات مخزون التجار</h2>
       <p className="text-sm text-gray-500 mb-6">الملفات التي يرفعها التجار من تطبيق Android</p>
 
@@ -62,6 +92,7 @@ export default function MerchantInventoryPage() {
                 <th className="text-center p-4">الملف</th>
                 <th className="text-center p-4">الحالة</th>
                 <th className="text-center p-4">التاريخ</th>
+                <th className="text-center p-4">إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -91,6 +122,15 @@ export default function MerchantInventoryPage() {
                   </td>
                   <td className="p-4 text-center text-gray-500 text-xs">
                     {new Date(r.createdAt).toLocaleDateString("ar-EG")}
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      disabled={deletingId === r.id}
+                      className="px-3 py-1.5 border border-red-300 text-red-600 text-xs rounded-lg hover:bg-red-50 disabled:opacity-50 transition"
+                    >
+                      {deletingId === r.id ? "جاري..." : "🗑️ حذف"}
+                    </button>
                   </td>
                 </tr>
               ))}
