@@ -12,6 +12,7 @@ interface Package {
   name: string;
   monthly_price: number;
   quarterly_price: number;
+  image?: string;
   features: Feature[];
 }
 
@@ -19,6 +20,8 @@ export default function TeacherPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", monthlyPrice: "", quarterlyPrice: "", features: [""] });
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     const res = await fetch("/api/dashboard/teacher");
@@ -30,6 +33,31 @@ export default function TeacherPage() {
 
   const addFeature = () => setForm({ ...form, features: [...form.features, ""] });
 
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "my_school_preset");
+    const res = await fetch("https://api.cloudinary.com/v1_1/vyhjq4m7/image/upload", {
+      method: "POST",
+      body: fd,
+    });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error(data.error?.message || "فشل رفع الصورة");
+    return data.secure_url;
+  };
+
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setImageUrl(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل رفع الصورة");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await fetch("/api/dashboard/teacher", {
@@ -39,10 +67,12 @@ export default function TeacherPage() {
         name: form.name,
         monthlyPrice: parseFloat(form.monthlyPrice) || 0,
         quarterlyPrice: parseFloat(form.quarterlyPrice) || 0,
+        image: imageUrl,
         features: form.features.filter((f) => f.trim()),
       }),
     });
     setShowModal(false);
+    setImageUrl("");
     setForm({ name: "", monthlyPrice: "", quarterlyPrice: "", features: [""] });
     load();
   };
@@ -62,6 +92,11 @@ export default function TeacherPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {packages.map((pkg) => (
           <div key={pkg.id} className="bg-white rounded-xl border p-5 shadow-sm">
+            {pkg.image ? (
+              <img src={pkg.image} alt={pkg.name} className="w-full h-36 object-cover rounded-lg mb-3" />
+            ) : (
+              <div className="w-full h-36 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400 text-3xl">📦</div>
+            )}
             <div className="flex justify-between items-start mb-3">
               <h3 className="font-bold text-gray-900">{pkg.name}</h3>
               <button onClick={() => handleDelete(pkg.id)} className="text-red-500 hover:text-red-700 text-sm">حذف</button>
@@ -100,6 +135,12 @@ export default function TeacherPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">السعر الفصلي</label>
                   <input type="number" step="0.01" value={form.quarterlyPrice} onChange={(e) => setForm({ ...form, quarterlyPrice: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" required />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">صورة الباقة</label>
+                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])} className="text-sm" disabled={uploading} />
+                {uploading && <p className="text-xs text-blue-500 mt-1">جاري الرفع...</p>}
+                {imageUrl && <img src={imageUrl} alt="" className="w-full h-32 object-cover rounded-lg mt-2" />}
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">

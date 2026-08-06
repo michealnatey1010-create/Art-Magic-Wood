@@ -59,6 +59,7 @@ model TeacherPackage {
   name            String
   monthly_price   Float
   quarterly_price Float
+  image           String   @default("")
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
 

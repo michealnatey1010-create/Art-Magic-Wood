@@ -65,6 +65,7 @@ export async function createTeacherPackage(data: {
   name: string;
   monthlyPrice: number;
   quarterlyPrice: number;
+  image?: string;
   features: string[];
 }) {
   return prisma.teacherPackage.create({
@@ -72,6 +73,7 @@ export async function createTeacherPackage(data: {
       name: data.name,
       monthly_price: data.monthlyPrice,
       quarterly_price: data.quarterlyPrice,
+      image: data.image || "",
       features: {
         create: data.features.map((text) => ({ text })),
       },
