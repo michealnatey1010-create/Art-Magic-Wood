@@ -127,6 +127,7 @@ model MerchantInventory {
   phone         String   @default("")
   file_url      String
   file_name     String   @default("")
+  status        String   @default("pending")
   created_at    DateTime @default(now())
 
   merchant      User     @relation(fields: [merchant_id], references: [id], onDelete: Cascade)

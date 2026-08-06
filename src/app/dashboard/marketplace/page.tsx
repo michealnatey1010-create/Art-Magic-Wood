@@ -10,8 +10,29 @@ interface Library {
   active: number;
 }
 
+interface Inventory {
+  id: string;
+  storeName: string;
+  storeAddress: string;
+  phone: string;
+  fileUrl: string;
+  fileName: string;
+  createdAt: string;
+}
+
+interface Merchant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  school: string;
+  storeLocation: string;
+  inventories: Inventory[];
+}
+
 export default function MarketplacePage() {
   const [libraries, setLibraries] = useState<Library[]>([]);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", commission: "10" });
 
@@ -21,7 +42,13 @@ export default function MarketplacePage() {
     setLibraries(data);
   };
 
-  useEffect(() => { load(); }, []);
+  const loadMerchants = async () => {
+    const res = await fetch("/api/merchant/inventory");
+    const data = await res.json();
+    setMerchants(data.data || []);
+  };
+
+  useEffect(() => { load(); loadMerchants(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +111,57 @@ export default function MarketplacePage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">📦 مخزون التجار</h2>
+        {merchants.length === 0 ? (
+          <div className="bg-white rounded-xl border p-8 text-center text-gray-400">لا يوجد مخزون مرفوع</div>
+        ) : (
+          <div className="bg-white rounded-xl border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b text-gray-600 font-bold">
+                  <th className="text-right p-4">التاجر</th>
+                  <th className="text-right p-4">اسم المتجر</th>
+                  <th className="text-right p-4">العنوان</th>
+                  <th className="text-center p-4">الملف المرفوع</th>
+                  <th className="text-center p-4">التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {merchants.map((m) =>
+                  m.inventories.length === 0 ? (
+                    <tr key={m.id} className="border-b hover:bg-gray-50">
+                      <td className="p-4 font-medium">{m.name}</td>
+                      <td className="p-4 text-gray-500" colSpan={4}>لا يوجد مخزون مرفوع</td>
+                    </tr>
+                  ) : (
+                    m.inventories.map((inv, idx) => (
+                      <tr key={inv.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-medium">{idx === 0 ? m.name : ""}</td>
+                        <td className="p-4 text-gray-600">{inv.storeName || "-"}</td>
+                        <td className="p-4 text-gray-600">{inv.storeAddress || "-"}</td>
+                        <td className="p-4 text-center">
+                          {inv.fileUrl ? (
+                            <a href={inv.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-bold">
+                              {inv.fileName || "عرض الملف"}
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-center text-gray-500">
+                          {new Date(inv.createdAt).toLocaleDateString("ar-EG")}
+                        </td>
+                      </tr>
+                    ))
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {showModal && (

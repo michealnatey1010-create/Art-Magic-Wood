@@ -12,6 +12,7 @@ const sidebarItems = [
   { href: "/dashboard/preorder", label: "الطلب المسبق", icon: "🛒" },
   { href: "/dashboard/marketplace", label: "عمولات المكتبات", icon: "🏪" },
   { href: "/dashboard/orders", label: "الطلبات", icon: "📋" },
+  { href: "/dashboard/merchant-inventory", label: "مخزون التجار", icon: "📦" },
   { href: "/dashboard/proposals", label: "مقترحات الحزم", icon: Package },
   { href: "/dashboard/users", label: "المستخدمون", icon: "👥" },
 ];
