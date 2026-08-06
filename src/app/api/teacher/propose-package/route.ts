@@ -1,5 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+
+export async function GET(req: NextRequest) {
+  const session = await getSession(req);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const proposals = await prisma.packageProposal.findMany({
+    orderBy: { created_at: "desc" },
+    include: {
+      teacher: { select: { id: true, name: true, email: true, phone: true } },
+    },
+  });
+
+  return NextResponse.json({
+    success: true,
+    data: proposals.map((p) => ({
+      id: p.id,
+      teacher_name: p.teacher_name,
+      teacher_phone: p.teacher_phone,
+      teacher_email: p.teacher_email,
+      package_details: p.package_details,
+      status: p.status,
+      created_at: p.created_at,
+    })),
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
