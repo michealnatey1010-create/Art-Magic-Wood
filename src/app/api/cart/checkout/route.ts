@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const usePoints = parseInt(body.usePoints) || 0;
+    const { usePoints, receiptImage } = body;
+    const pointsValue = parseInt(usePoints) || 0;
 
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return NextResponse.json({ success: false, message: "المستخدم غير موجود" }, { status: 404 });
@@ -24,10 +25,10 @@ export async function POST(req: NextRequest) {
 
     const total = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    if (usePoints > user.points) {
+    if (pointsValue > user.points) {
       return NextResponse.json({ success: false, message: "رصيد نقاط غير كافٍ" }, { status: 400 });
     }
-    const pointsToUse = Math.min(usePoints, Math.floor(total));
+    const pointsToUse = Math.min(pointsValue, Math.floor(total));
     const finalPrice = total - pointsToUse;
     const pointsEarned = Math.floor(total / 10);
     const newBalance = user.points - pointsToUse + pointsEarned;
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
           discount: pointsToUse,
           pointsUsed: pointsToUse,
           pointsEarned,
+          receiptImage: receiptImage || null,
           status: "pending",
         },
       }),
