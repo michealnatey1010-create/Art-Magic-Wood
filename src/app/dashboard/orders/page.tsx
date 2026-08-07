@@ -66,13 +66,28 @@ export default function OrdersPage() {
 
   useEffect(() => { load(); }, [filter]);
 
-  const handleStatus = async (id: string, status: string) => {
-    await fetch(`/api/orders/${id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    load();
+  const updateStatus = async (orderId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId ? { ...order, status } : order
+          )
+        );
+        alert(`✅ تم ${status === 'confirmed' ? 'تأكيد' : status === 'shipped' ? 'شحن' : 'توصيل'} الطلب بنجاح`);
+      } else {
+        alert('❌ فشل تحديث الحالة: ' + (data.error || data.message || 'خطأ غير معروف'));
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('❌ حدث خطأ في الاتصال');
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -171,15 +186,15 @@ export default function OrdersPage() {
               <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-2">
                 {order.status === "pending" && (
                   <>
-                    <button onClick={() => handleStatus(order.id, "confirmed")} className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">تأكيد الطلب</button>
-                    <button onClick={() => handleStatus(order.id, "cancelled")} className="px-4 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200">إلغاء</button>
+                    <button onClick={() => updateStatus(order.id, "confirmed")} className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">تأكيد الطلب</button>
+                    <button onClick={() => updateStatus(order.id, "cancelled")} className="px-4 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200">إلغاء</button>
                   </>
                 )}
                 {order.status === "confirmed" && (
-                  <button onClick={() => handleStatus(order.id, "shipped")} className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">تم الشحن</button>
+                  <button onClick={() => updateStatus(order.id, "shipped")} className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">تم الشحن</button>
                 )}
                 {order.status === "shipped" && (
-                  <button onClick={() => handleStatus(order.id, "delivered")} className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">تم التوصيل</button>
+                  <button onClick={() => updateStatus(order.id, "delivered")} className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">تم التوصيل</button>
                 )}
                 <button onClick={() => handleDelete(order.id)} className="px-4 py-1.5 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50">حذف</button>
               </div>
