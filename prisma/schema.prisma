@@ -182,6 +182,10 @@ model Order {
   receiptImage String?
 
   status       String   @default("pending")
+  trackingHistory Json?
+  confirmedAt  DateTime?
+  shippedAt    DateTime?
+  deliveredAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

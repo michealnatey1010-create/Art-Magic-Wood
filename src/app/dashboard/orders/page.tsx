@@ -67,7 +67,7 @@ export default function OrdersPage() {
   useEffect(() => { load(); }, [filter]);
 
   const handleStatus = async (id: string, status: string) => {
-    await fetch(`/api/dashboard/orders?id=${id}`, {
+    await fetch(`/api/orders/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
