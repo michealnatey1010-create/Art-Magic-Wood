@@ -5,13 +5,14 @@ import { getSession } from "@/lib/auth";
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "admin") {
+  if ((session.role || "").toUpperCase() !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden: admin only" }, { status: 403 });
   }
 
   const { id } = await params;
 
   const { status } = await req.json();
+  console.log("Updating order:", id, "to status:", status);
   const validStatuses = ["confirmed", "shipped", "delivered", "cancelled"];
 
   if (!validStatuses.includes(status)) {

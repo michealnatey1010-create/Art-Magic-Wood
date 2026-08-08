@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   // owner أو admin فقط يمكنه رؤية الطلب
-  if (order.userId !== session.id && session.role !== "admin") {
+  if (order.userId !== session.id && (session.role || "").toUpperCase() !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
