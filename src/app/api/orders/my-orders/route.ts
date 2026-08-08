@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const orders = await prisma.order.findMany({
     where: { userId: session.id },
     orderBy: { createdAt: "desc" },
+    include: { items: true },
   });
 
   const mapped = orders.map((o) => ({
@@ -16,7 +17,14 @@ export async function GET(req: Request) {
     status: o.status,
     totalPrice: o.price,
     createdAt: o.createdAt.toISOString(),
-    items: [{ productName: o.itemName, price: o.price, quantity: 1 }],
+    items:
+      o.items.length > 0
+        ? o.items.map((i) => ({
+            productName: i.productName,
+            price: i.price,
+            quantity: i.quantity,
+          }))
+        : [{ productName: o.itemName, price: o.price, quantity: 1 }],
   }));
 
   return NextResponse.json({ success: true, orders: mapped });

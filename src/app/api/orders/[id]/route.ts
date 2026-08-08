@@ -10,7 +10,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
+    include: {
+      items: true,
+      user: { select: { id: true, name: true, email: true, phone: true } },
+    },
   });
 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -22,21 +25,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   return NextResponse.json({
     success: true,
-    data: {
+    order: {
       id: order.id,
       source: order.source,
-      itemId: order.itemId,
-      itemName: order.itemName,
-      price: order.price,
+      status: order.status,
+      totalPrice: order.price,
       discount: order.discount,
       pointsUsed: order.pointsUsed,
       pointsEarned: order.pointsEarned,
       receiptImage: order.receiptImage,
-      status: order.status,
+      createdAt: order.createdAt,
       confirmedAt: order.confirmedAt,
       shippedAt: order.shippedAt,
       deliveredAt: order.deliveredAt,
-      createdAt: order.createdAt,
+      items:
+        order.items.length > 0
+          ? order.items.map((i) => ({
+              productName: i.productName,
+              price: i.price,
+              quantity: i.quantity,
+            }))
+          : [{ productName: order.itemName, price: order.price, quantity: 1 }],
     },
   });
 }

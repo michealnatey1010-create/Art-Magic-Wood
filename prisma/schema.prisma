@@ -189,7 +189,21 @@ model Order {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  items        OrderItem[]
+
   @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productName String
+  price       Float
+  quantity    Int
+  createdAt   DateTime @default(now())
+
+  @@map("order_items")
 }
 
 model Notification {

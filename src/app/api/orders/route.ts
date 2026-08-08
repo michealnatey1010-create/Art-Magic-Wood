@@ -49,6 +49,9 @@ export async function POST(req: Request) {
       pointsEarned,
       receiptImage: receiptImage || null,
       status: "pending",
+      items: {
+        create: [{ productName: itemName, price, quantity: 1 }],
+      },
     },
   });
 

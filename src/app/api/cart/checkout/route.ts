@@ -46,6 +46,13 @@ export async function POST(req: NextRequest) {
           pointsEarned,
           receiptImage: receiptImage || null,
           status: "pending",
+          items: {
+            create: cart.items.map((i) => ({
+              productName: i.productName,
+              price: i.price,
+              quantity: i.quantity,
+            })),
+          },
         },
       }),
       prisma.cartItem.deleteMany({ where: { cart_id: cart.id } }),
