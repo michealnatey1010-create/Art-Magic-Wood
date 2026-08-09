@@ -38,6 +38,20 @@ export default function ProposalsClient({ proposals }: { proposals: Proposal[] }
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("هل تريد حذف هذا الاقتراح نهائياً؟")) return;
+    try {
+      const res = await fetch(`/api/teacher/proposals/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "فشل الحذف");
+      setItems((prev) => prev.filter((p) => p.id !== id));
+      if (selected?.id === id) setSelected(null);
+      showToast("success", "تم حذف الاقتراح 🗑️");
+    } catch (e) {
+      showToast("error", e instanceof Error ? e.message : "حدث خطأ");
+    }
+  };
+
   return (
     <div className="p-6" dir="rtl">
       {toast && (
@@ -138,6 +152,12 @@ export default function ProposalsClient({ proposals }: { proposals: Proposal[] }
                   className="px-4 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   📋 عرض التفاصيل
+                </button>
+                <button
+                  onClick={() => handleDelete(proposal.id)}
+                  className="px-4 py-1.5 border border-red-300 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  🗑️ حذف
                 </button>
               </div>
             </div>
