@@ -8,12 +8,12 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadToCloudinary = (file: File, folder: string, resourceType: "auto" | "raw" | "image") =>
+const uploadToCloudinary = (file: File, folder: string) =>
   new Promise<string>((resolve, reject) => {
     file.arrayBuffer()
       .then((buffer) => {
         const stream = cloudinary.v2.uploader.upload_stream(
-          { folder, resource_type: resourceType, access_mode: "public" },
+          { folder, resource_type: "raw", access_mode: "public" },
           (error, result) => {
             if (error) return reject(error);
             resolve(result?.secure_url || "");
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       }
 
       console.log("📦 Uploading file to Cloudinary (resource_type auto)...");
-      fileUrl = await uploadToCloudinary(file, "merchant-inventory", "auto");
+      fileUrl = await uploadToCloudinary(file, "merchant-inventory");
       console.log("📦 Uploaded:", fileUrl);
     } else {
       // التوافق القديم: fileUrl جاهز من التطبيق
