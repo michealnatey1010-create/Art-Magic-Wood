@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const { packageId, subscriptionType, userName, address, phone, senderPhone, receiptImage } = await req.json();
+    console.log("Saving subscription:", { packageId, subscriptionType, userName, address, phone, senderPhone, receiptImage });
 
     if (!packageId || !subscriptionType || !userName || !phone) {
       return NextResponse.json({ success: false, message: "الحقول المطلوبة: packageId, subscriptionType, userName, phone" }, { status: 400 });
