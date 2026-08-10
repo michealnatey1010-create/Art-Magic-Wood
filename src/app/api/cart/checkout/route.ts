@@ -8,8 +8,15 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { usePoints, receiptImage } = body;
+    console.log("🛒 Received checkout data:", body);
+    const { usePoints, receiptImage, address, phone, senderPhone, userName } = body;
     const pointsValue = parseInt(usePoints) || 0;
+
+    console.log("📦 Received cart checkout data:");
+    console.log("userName:", userName);
+    console.log("address:", address);
+    console.log("phone:", phone);
+    console.log("senderPhone:", senderPhone);
 
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return NextResponse.json({ success: false, message: "المستخدم غير موجود" }, { status: 404 });
@@ -45,6 +52,9 @@ export async function POST(req: NextRequest) {
           pointsUsed: pointsToUse,
           pointsEarned,
           receiptImage: receiptImage || null,
+          address: address || null,
+          phone: phone || null,
+          senderPhone: senderPhone || null,
           status: "pending",
           items: {
             create: cart.items.map((i) => ({

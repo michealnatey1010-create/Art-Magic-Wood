@@ -14,6 +14,9 @@ interface Order {
   pointsEarned: number;
   status: string;
   receiptImage?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  senderPhone?: string | null;
   createdAt: string;
   user: { id: string; name: string; email: string; phone: string };
 }
@@ -140,9 +143,11 @@ export default function OrdersPage() {
                       {order.user.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-800">{order.user.name}</h3>
+                      <h3 className="text-lg font-bold text-gray-800">{order.user?.name || "غير معروف"}</h3>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                        <span>📱 {order.user.phone || order.user.email}</span>
+                        <span>📱 {order.phone || order.user?.phone || order.user?.email || "—"}</span>
+                        <span>📍 {order.address || "—"}</span>
+                        <span>📤 مرسل منه: {order.senderPhone || "—"}</span>
                         <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
                           {sourceIcons[order.source]} {sourceLabels[order.source] || order.source}
                         </span>

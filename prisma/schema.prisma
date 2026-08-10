@@ -181,6 +181,10 @@ model Order {
   pointsEarned Int      @default(0)
   receiptImage String?
 
+  address      String?
+  phone        String?
+  senderPhone  String?
+
   status       String   @default("pending")
   trackingHistory Json?
   confirmedAt  DateTime?

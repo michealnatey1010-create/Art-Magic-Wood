@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import DeleteSubscriptionButton from "./DeleteSubscriptionButton";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,7 @@ export default async function SubscriptionsPage() {
                     🧾 عرض الإيصال
                   </a>
                 )}
+                <DeleteSubscriptionButton id={s.id} userName={s.user_name} />
               </div>
             </div>
           ))}

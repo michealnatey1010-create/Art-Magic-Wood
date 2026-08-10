@@ -81,7 +81,24 @@ export async function getOrders(source?: string) {
   return prisma.order.findMany({
     where: source ? { source } : undefined,
     orderBy: { createdAt: "desc" },
-    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
+    select: {
+      id: true,
+      userId: true,
+      source: true,
+      itemId: true,
+      itemName: true,
+      price: true,
+      discount: true,
+      pointsUsed: true,
+      pointsEarned: true,
+      receiptImage: true,
+      address: true,
+      phone: true,
+      senderPhone: true,
+      status: true,
+      createdAt: true,
+      user: { select: { id: true, name: true, email: true, phone: true } },
+    },
   });
 }
 
