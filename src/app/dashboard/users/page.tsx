@@ -68,6 +68,19 @@ export default function UsersPage() {
     setLoadingProducts(false);
   };
 
+  const handleDelete = async (user: User) => {
+    if (!confirm(`هل تريد حذف حساب "${user.name}" نهائياً؟`)) return;
+    try {
+      const res = await fetch(`/api/dashboard/users/${user.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || data.message || "فشل الحذف");
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      alert(`✅ تم حذف حساب "${user.name}"`);
+    } catch (e) {
+      alert("❌ " + (e instanceof Error ? e.message : "حدث خطأ"));
+    }
+  };
+
   return (
     <div>
       <div className="mb-6">
@@ -90,6 +103,7 @@ export default function UsersPage() {
               <th className="text-center p-4">نوع الحساب</th>
               <th className="text-center p-4">المنتجات</th>
               <th className="text-center p-4">تاريخ التسجيل</th>
+              <th className="text-center p-4">إجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -113,10 +127,18 @@ export default function UsersPage() {
                   )}
                 </td>
                 <td className="p-4 text-center text-gray-500">{new Date(user.created_at).toLocaleDateString("ar-EG")}</td>
+                <td className="p-4 text-center">
+                  <button
+                    onClick={() => handleDelete(user)}
+                    className="px-3 py-1.5 border border-red-300 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    🗑️ حذف
+                  </button>
+                </td>
               </tr>
             ))}
             {users.length === 0 && (
-              <tr><td colSpan={6} className="text-center p-8 text-gray-400">لا يوجد مستخدمون</td></tr>
+              <tr><td colSpan={7} className="text-center p-8 text-gray-400">لا يوجد مستخدمون</td></tr>
             )}
           </tbody>
         </table>

@@ -108,6 +108,7 @@ export default function SupplyPage() {
     fd.append("points", String(parseInt(form.points) || 0));
     fd.append("price", String(parseFloat(form.price) || 0));
     if (coverImageUrl) fd.append("coverImage", coverImageUrl);
+    fd.append("products", JSON.stringify(form.products));
 
     try {
       const res = await fetch("/api/supply-stages", { method: "POST", body: fd });

@@ -67,8 +67,34 @@ export async function POST(req: Request) {
       coverImage = await uploadToCloudinary(rawCover as File);
     }
 
+    // Products come as a JSON string (same handling as PUT)
+    let products: { name: string; price?: number; image?: string }[] = [];
+    try {
+      const rawProducts = formData.get("products");
+      if (rawProducts) {
+        const parsed = JSON.parse(String(rawProducts));
+        if (Array.isArray(parsed)) {
+          products = parsed
+            .filter((p: any) => p && typeof p.name === "string" && p.name.trim())
+            .map((p: any) => ({
+              name: p.name.trim(),
+              price: p.price ? parseFloat(p.price) : undefined,
+              image: p.image || "",
+            }));
+        }
+      }
+    } catch {
+      products = [];
+    }
+
     const stage = await prisma.stage.create({
-      data: { name, points, price, coverImage },
+      data: {
+        name,
+        points,
+        price,
+        coverImage,
+        products: products.length > 0 ? { create: products } : undefined,
+      },
     });
 
     return NextResponse.json({
