@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { createToken } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
@@ -46,10 +47,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // إنشاء التوكن فوراً ليتمكن المستخدم من الشراء دون تسجيل دخول إضافي
+    const token = await createToken({ id: user.id, email: user.email, role: user.role });
+
     return NextResponse.json(
       {
         success: true,
         message: "تم إنشاء الحساب بنجاح",
+        token,
         user: {
           id: user.id,
           name: user.name,
