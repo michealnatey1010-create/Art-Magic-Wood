@@ -60,13 +60,12 @@ export default function SupplyPage() {
   };
 
   const uploadImage = async (idx: number, file: File) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("sub", "products");
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    console.log("📸 Product image URL:", data.url);
-    updateProduct(idx, "image", data.url);
+    try {
+      const url = await uploadToCloudinary(file);
+      updateProduct(idx, "image", url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل رفع صورة المنتج");
+    }
   };
 
   const selectCoverImage = (file: File) => {
