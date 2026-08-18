@@ -3,10 +3,7 @@ import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
-  const session = await getSession(req);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  let body: { token?: string; device?: string };
+  let body: { token?: string; device?: string; userId?: string };
   try {
     body = await req.json();
   } catch {
@@ -16,15 +13,17 @@ export async function POST(req: NextRequest) {
   const token = body.token?.trim();
   if (!token) return NextResponse.json({ error: "token مطلوب" }, { status: 400 });
 
+  const userId = body.userId?.trim();
+  if (!userId) return NextResponse.json({ error: "userId مطلوب" }, { status: 400 });
+
   const device = body.device?.trim() || "android";
 
   try {
     await prisma.fCMToken.upsert({
       where: { token },
-      create: { userId: session.id, token, device },
-      update: { userId: session.id, device },
+      create: { userId, token, device },
+      update: { userId, device },
     });
-
     return NextResponse.json({ success: true, message: "تم تسجيل الرمز بنجاح" });
   } catch (e) {
     console.error("Register token error:", e);
