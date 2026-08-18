@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { notifyUsers } from "@/lib/notifications";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(req);
@@ -77,8 +78,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       },
     });
 
-    // هنا سنضيف إرسال الإشعار (FCM) لاحقاً
-    // await sendNotification(order.userId, `تم ${status} طلبك`);
+    const statusLabels: Record<string, string> = {
+      confirmed: "تم تأكيد طلبك ✅",
+      shipped: "تم شحن طلبك 🚚",
+      delivered: "تم توصيل طلبك 📦",
+      cancelled: "تم إلغاء طلبك ❌",
+    };
+
+    if (statusLabels[status]) {
+      await notifyUsers([order.userId], statusLabels[status], `طلب: ${order.itemName}`, {
+        type: "order_status",
+        orderId: order.id,
+        status,
+      });
+    }
 
     return NextResponse.json({ success: true, order });
   } catch (e) {

@@ -25,6 +25,7 @@ model User {
   package_proposals PackageProposal[]
   orders            Order[]
   cart              Cart?
+  fcmTokens         FCMToken[]
 }
 
 model Cart {
@@ -208,6 +209,18 @@ model OrderItem {
   createdAt   DateTime @default(now())
 
   @@map("order_items")
+}
+
+model FCMToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  device    String?  // "android", "ios", "web"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fcm_tokens")
 }
 
 model Notification {
