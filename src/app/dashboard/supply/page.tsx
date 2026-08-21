@@ -14,7 +14,17 @@ interface Stage {
   points: number;
   coverImage?: string;
   price?: number;
+  categoryId?: string | null;
+  category?: { id: string; name: string; icon?: string | null } | null;
   products: Product[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon?: string | null;
+  order: number;
+  _count?: { stages: number };
 }
 
 interface ProductForm {
@@ -28,23 +38,30 @@ const imgUrl = (url?: string) => url ? (url.startsWith("data:") ? url : `${url}?
 
 export default function SupplyPage() {
   const [stages, setStages] = useState<Stage[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", price: "", coverImage: "", points: "0", products: [{ name: "", price: "", image: "" }] as ProductForm[] });
+  const [form, setForm] = useState({ name: "", price: "", coverImage: "", points: "0", categoryId: "", products: [{ name: "", price: "", image: "" }] as ProductForm[] });
   const [uploading, setUploading] = useState(false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
 
   const [editStage, setEditStage] = useState<Stage | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", price: "", points: "0", coverImage: "" });
+  const [editForm, setEditForm] = useState({ name: "", price: "", points: "0", coverImage: "", categoryId: "" });
   const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
   const [editCoverPreview, setEditCoverPreview] = useState("");
   const [editProducts, setEditProducts] = useState<ProductForm[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const [showCategories, setShowCategories] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: "", icon: "", order: "0" });
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
   const load = async () => {
     const res = await fetch("/api/dashboard/supply");
     const data = await res.json();
     setStages(data);
+    const catRes = await fetch("/api/categories");
+    if (catRes.ok) setCategories(await catRes.json());
   };
 
   useEffect(() => { load(); }, []);
@@ -106,6 +123,7 @@ export default function SupplyPage() {
     fd.append("name", form.name);
     fd.append("points", String(parseInt(form.points) || 0));
     fd.append("price", String(parseFloat(form.price) || 0));
+    if (form.categoryId) fd.append("categoryId", form.categoryId);
     if (coverImageUrl) fd.append("coverImage", coverImageUrl);
     fd.append("products", JSON.stringify(form.products));
 
@@ -121,13 +139,47 @@ export default function SupplyPage() {
     setShowModal(false);
     setCoverFile(null);
     setCoverPreview("");
-    setForm({ name: "", price: "", coverImage: "", points: "0", products: [{ name: "", price: "", image: "" }] });
+    setForm({ name: "", price: "", coverImage: "", points: "0", categoryId: "", products: [{ name: "", price: "", image: "" }] });
     load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("تأكيد الحذف؟")) return;
     await fetch(`/api/dashboard/supply?id=${id}`, { method: "DELETE" });
+    load();
+  };
+
+  const addCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategory.name.trim()) return;
+    const res = await fetch("/api/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newCategory),
+    });
+    const data = await res.json();
+    if (!res.ok) alert(data.error || "حدث خطأ");
+    else setNewCategory({ name: "", icon: "", order: "0" });
+    load();
+  };
+
+  const saveCategoryEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    const res = await fetch(`/api/categories/${editingCategory.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editingCategory.name, icon: editingCategory.icon || "", order: String(editingCategory.order ?? 0) }),
+    });
+    const data = await res.json();
+    if (!res.ok) alert(data.error || "حدث خطأ");
+    else setEditingCategory(null);
+    load();
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!confirm("حذف الفئة؟ المراحل التابعة لها ستبقى بدون فئة.")) return;
+    await fetch(`/api/categories/${id}`, { method: "DELETE" });
     load();
   };
 
@@ -138,6 +190,7 @@ export default function SupplyPage() {
       price: String(stage.price ?? ""),
       points: String(stage.points ?? 0),
       coverImage: stage.coverImage || "",
+      categoryId: stage.categoryId || "",
     });
     setEditProducts(stage.products.map((p) => ({ name: p.name, price: p.price != null ? String(p.price) : "", image: p.image || "" })));
     setEditCoverFile(null);
@@ -199,6 +252,7 @@ export default function SupplyPage() {
     fd.append("name", editForm.name);
     fd.append("points", String(parseInt(editForm.points) || 0));
     fd.append("price", String(parseFloat(editForm.price) || 0));
+    fd.append("categoryId", editForm.categoryId);
     fd.append("coverImage", coverImageUrl);
     fd.append("products", JSON.stringify(editProducts));
 
@@ -217,9 +271,50 @@ export default function SupplyPage() {
 
   return (
     <div>
-      <button onClick={() => setShowModal(true)} className="mb-6 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-sm">
-        + إضافة مرحلة دراسية جديدة
-      </button>
+      <div className="flex gap-3 mb-6">
+        <button onClick={() => setShowModal(true)} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition text-sm">
+          + إضافة مرحلة دراسية جديدة
+        </button>
+        <button onClick={() => setShowCategories(!showCategories)} className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
+          🗂️ إدارة الفئات
+        </button>
+      </div>
+
+      {showCategories && (
+        <div className="bg-white rounded-xl border p-4 shadow-sm mb-6">
+          <h3 className="font-bold text-gray-900 mb-3">إدارة الفئات</h3>
+          <form onSubmit={addCategory} className="flex flex-wrap gap-2 mb-4">
+            <input type="text" placeholder="اسم الفئة (مثال: ابتدائي)" value={newCategory.name} onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })} className="flex-1 min-w-[160px] px-3 py-2 border rounded-lg text-sm" required />
+            <input type="text" placeholder="أيقونة (emoji)" value={newCategory.icon} onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })} className="w-32 px-3 py-2 border rounded-lg text-sm" />
+            <input type="number" placeholder="الترتيب" value={newCategory.order} onChange={(e) => setNewCategory({ ...newCategory, order: e.target.value })} className="w-24 px-3 py-2 border rounded-lg text-sm" />
+            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">+ إضافة</button>
+          </form>
+          <div className="space-y-2">
+            {categories.map((cat) => (
+              <div key={cat.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                {editingCategory?.id === cat.id ? (
+                  <form onSubmit={saveCategoryEdit} className="flex flex-wrap gap-2 flex-1">
+                    <input type="text" value={editingCategory.name} onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} className="flex-1 min-w-[140px] px-3 py-1.5 border rounded text-sm" required />
+                    <input type="text" placeholder="أيقونة" value={editingCategory.icon || ""} onChange={(e) => setEditingCategory({ ...editingCategory, icon: e.target.value })} className="w-28 px-3 py-1.5 border rounded text-sm" />
+                    <input type="number" value={editingCategory.order ?? 0} onChange={(e) => setEditingCategory({ ...editingCategory, order: parseInt(e.target.value) || 0 })} className="w-20 px-3 py-1.5 border rounded text-sm" />
+                    <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-bold">حفظ</button>
+                    <button type="button" onClick={() => setEditingCategory(null)} className="px-3 py-1.5 border rounded text-xs font-bold">إلغاء</button>
+                  </form>
+                ) : (
+                  <>
+                    <span className="text-lg">{cat.icon || "📁"}</span>
+                    <span className="font-bold text-sm flex-1">{cat.name}</span>
+                    <span className="text-xs text-gray-400">{cat._count?.stages ?? 0} مرحلة</span>
+                    <button onClick={() => setEditingCategory(cat)} className="text-blue-600 text-xs font-bold">تعديل</button>
+                    <button onClick={() => deleteCategory(cat.id)} className="text-red-500 text-xs font-bold">حذف</button>
+                  </>
+                )}
+              </div>
+            ))}
+            {categories.length === 0 && <p className="text-xs text-gray-400 text-center py-2">لا توجد فئات — أضف فئة مثل: ابتدائي، إعدادي، ثانوي</p>}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stages.map((stage) => (
@@ -245,6 +340,11 @@ export default function SupplyPage() {
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="font-bold text-gray-900">{stage.name}</h3>
+                  {stage.category && (
+                    <span className="inline-block mt-0.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-bold">
+                      {stage.category.icon || "📁"} {stage.category.name}
+                    </span>
+                  )}
                   <p className="text-xs text-gray-500">نقاط المكافأة: {stage.points}</p>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); handleDelete(stage.id); }} className="text-red-500 hover:text-red-700 text-sm">حذف</button>
@@ -281,6 +381,15 @@ export default function SupplyPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">اسم المرحلة <span className="text-red-500">*</span></label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
+                <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  <option value="">بدون فئة</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.icon || "📁"} {cat.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">سعر الحزمة (ج.م) <span className="text-red-500">*</span></label>
@@ -332,6 +441,15 @@ export default function SupplyPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">اسم المرحلة <span className="text-red-500">*</span></label>
                 <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
+                <select value={editForm.categoryId} onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  <option value="">بدون فئة</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.icon || "📁"} {cat.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">سعر الحزمة (ج.م) <span className="text-red-500">*</span></label>

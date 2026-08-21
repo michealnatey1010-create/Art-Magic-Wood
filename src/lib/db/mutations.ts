@@ -46,9 +46,18 @@ export async function updateStage(
     price: number;
     coverImage?: string;
     products: { name: string; price?: number; image?: string }[];
+    categoryId?: string | null;
   }
 ) {
-  await prisma.stage.update({ where: { id }, data: { name: data.name, points: data.points, price: data.price } });
+  await prisma.stage.update({
+    where: { id },
+    data: {
+      name: data.name,
+      points: data.points,
+      price: data.price,
+      ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
+    },
+  });
 
   await prisma.$transaction([
     prisma.product.deleteMany({ where: { stage_id: id } }),

@@ -44,6 +44,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     const points = parseInt(String(formData.get("points") || "0")) || 0;
     const price = parseFloat(String(formData.get("price") || "0")) || 0;
+    const categoryIdRaw = String(formData.get("categoryId") || "");
+    const categoryId = formData.has("categoryId") ? (categoryIdRaw || null) : undefined;
 
     // Cover image: URL string from client-side direct upload, or file (fallback)
     let coverImage = existing.coverImage;
@@ -74,7 +76,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       products = [];
     }
 
-    await updateStage(id, { name, points, price, coverImage, products });
+    await updateStage(id, { name, points, price, coverImage, products, categoryId });
 
     return NextResponse.json({
       success: true,

@@ -48,6 +48,7 @@ export async function getStages() {
   const stages = await prisma.stage.findMany({
     orderBy: { created_at: "desc" },
     include: {
+      category: true,
       products: { orderBy: { created_at: "asc" } },
     },
   });

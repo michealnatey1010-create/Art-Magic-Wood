@@ -29,6 +29,7 @@ export async function GET() {
     const stages = await prisma.stage.findMany({
       orderBy: { created_at: "desc" },
       include: {
+        category: true,
         products: { orderBy: { created_at: "asc" }, select: { id: true, name: true, price: true, image: true } },
       },
     });
@@ -39,6 +40,8 @@ export async function GET() {
       coverImage: s.coverImage,
       points: s.points,
       price: s.price,
+      categoryId: s.categoryId,
+      category: s.category ? { id: s.category.id, name: s.category.name, icon: s.category.icon } : null,
       products: s.products.map((p) => ({ id: p.id, name: p.name, price: p.price, image: p.image })),
     }));
 
@@ -54,6 +57,7 @@ export async function POST(req: Request) {
     const name = String(formData.get("name") || "");
     const points = parseInt(String(formData.get("points") || "0")) || 0;
     const price = parseFloat(String(formData.get("price") || "0")) || 0;
+    const categoryId = String(formData.get("categoryId") || "") || null;
 
     if (!name) {
       return NextResponse.json({ success: false, message: "اسم المرحلة مطلوب" }, { status: 400 });
@@ -93,6 +97,7 @@ export async function POST(req: Request) {
         points,
         price,
         coverImage,
+        categoryId,
         products: products.length > 0 ? { create: products } : undefined,
       },
     });
