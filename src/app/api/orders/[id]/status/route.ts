@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { notifyUsers } from "@/lib/notifications";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(req);
@@ -52,8 +53,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       },
     });
 
-    // إرسال إشعار FCM إلى جهاز المستخدم (سنضبط المفاتيح لاحقاً)
-    // await sendFcmNotification(order.userId, `تم ${status} طلبك`);
+    // إرسال إشعار FCM إلى جهاز المستخدم
+    let notification: { title: string; body: string } | null = null;
+    if (status === "confirmed") {
+      notification = {
+        title: "✅ تم تأكيد طلبك",
+        body: "تم تأكيد طلبك بنجاح، جاري التجهيز للشحن.",
+      };
+    } else if (status === "shipped") {
+      notification = {
+        title: "🚚 تم شحن طلبك",
+        body: "تم شحن طلبك، وسيصل إليك قريباً.",
+      };
+    } else if (status === "delivered") {
+      notification = {
+        title: "📦 تم توصيل طلبك",
+        body: "تم توصيل طلبك بنجاح، شكراً لثقتك بنا.",
+      };
+    }
+
+    if (notification) {
+      await notifyUsers(
+        [order.userId],
+        notification.title,
+        notification.body,
+        { type: "order", orderId: order.id, status }
+      );
+    }
 
     return NextResponse.json({ success: true, message: "تم تحديث حالة الطلب", order: updatedOrder });
   } catch (e) {
