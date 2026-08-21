@@ -23,6 +23,7 @@ function getServiceAccount(): ServiceAccount | string {
 }
 
 export function getFirebaseAdmin(): App {
+  console.log("🔍 FIREBASE_SERVICE_ACCOUNT exists:", !!process.env.FIREBASE_SERVICE_ACCOUNT);
   if (getApps().length === 0) {
     initializeApp({
       credential: cert(getServiceAccount() as ServiceAccount),
