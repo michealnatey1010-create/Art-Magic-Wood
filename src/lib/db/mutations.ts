@@ -94,6 +94,34 @@ export async function deleteTeacherPackage(id: string) {
   await prisma.teacherPackage.delete({ where: { id } });
 }
 
+export async function updateTeacherPackage(
+  id: string,
+  data: {
+    name: string;
+    monthlyPrice: number;
+    quarterlyPrice: number;
+    image?: string;
+    features: string[];
+  }
+) {
+  await prisma.teacherPackage.update({
+    where: { id },
+    data: {
+      name: data.name,
+      monthly_price: data.monthlyPrice,
+      quarterly_price: data.quarterlyPrice,
+      ...(data.image !== undefined ? { image: data.image || "" } : {}),
+    },
+  });
+
+  await prisma.$transaction([
+    prisma.teacherFeature.deleteMany({ where: { package_id: id } }),
+    ...data.features.map((text) =>
+      prisma.teacherFeature.create({ data: { text, package_id: id } })
+    ),
+  ]);
+}
+
 // ─── Merchant Products ───
 export async function createMerchantProducts(
   vendorId: string,

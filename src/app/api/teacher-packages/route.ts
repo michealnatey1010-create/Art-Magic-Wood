@@ -13,7 +13,7 @@ export async function GET() {
       priceMonthly: p.monthly_price,
       priceSemester: p.quarterly_price,
       features: p.features.map((f) => f.text),
-      image: "",
+      image: p.image || "",
     }));
     return NextResponse.json({ success: true, data });
   } catch {
