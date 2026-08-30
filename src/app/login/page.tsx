@@ -40,7 +40,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
       <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg border">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">منصة المعرفة</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Art-Magic-Wood</h1>
           <p className="text-sm text-gray-500 mt-1">لوحة التحكم الإدارية</p>
         </div>
 

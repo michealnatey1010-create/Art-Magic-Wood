@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen flex bg-gray-50" dir="rtl">
       <aside className={`bg-white border-l border-gray-200 flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
         <div className="p-4 border-b flex items-center justify-between">
-          {!collapsed && <span className="font-bold text-lg text-blue-600">منصة المعرفة</span>}
+          {!collapsed && <span className="font-bold text-lg text-blue-600">Art-Magic-Wood</span>}
           <button onClick={() => setCollapsed(!collapsed)} className="text-gray-500 hover:text-gray-700 p-1">
             {collapsed ? "☰" : "✕"}
           </button>
