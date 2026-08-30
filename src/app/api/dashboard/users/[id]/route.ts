@@ -21,6 +21,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "المستخدم غير موجود" }, { status: 404 });
     }
 
+    if (existing.email?.toLowerCase() === "admin@school.com") {
+      return NextResponse.json({ error: "لا يمكن حذف حساب المشرف العام" }, { status: 400 });
+    }
+
     await prisma.user.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: "تم حذف الحساب" });

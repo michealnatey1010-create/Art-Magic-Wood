@@ -128,12 +128,16 @@ export default function UsersPage() {
                 </td>
                 <td className="p-4 text-center text-gray-500">{new Date(user.created_at).toLocaleDateString("ar-EG")}</td>
                 <td className="p-4 text-center">
-                  <button
-                    onClick={() => handleDelete(user)}
-                    className="px-3 py-1.5 border border-red-300 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    🗑️ حذف
-                  </button>
+                  {user.email?.toLowerCase() === "admin@school.com" ? (
+                    <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-500 text-xs font-bold">محمي</span>
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(user)}
+                      className="px-3 py-1.5 border border-red-300 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      🗑️ حذف
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
