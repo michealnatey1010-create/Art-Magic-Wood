@@ -5,7 +5,10 @@ import { getSession } from "@/lib/auth";
 export async function GET() {
   const categories = await prisma.stationeryCategory.findMany({
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    include: { _count: { select: { products: true } } },
+    include: {
+      products: { orderBy: { createdAt: "desc" } },
+      _count: { select: { products: true } },
+    },
   });
   return NextResponse.json(categories);
 }

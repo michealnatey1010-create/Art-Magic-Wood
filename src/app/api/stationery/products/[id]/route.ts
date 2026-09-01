@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const product = await prisma.stationeryProduct.findUnique({
+    where: { id },
+    include: { category: true },
+  });
+  if (!product) return NextResponse.json({ error: "المنتج غير موجود" }, { status: 404 });
+  return NextResponse.json(product);
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
