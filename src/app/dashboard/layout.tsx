@@ -8,6 +8,7 @@ import { Package } from "lucide-react";
 const sidebarItems = [
   { href: "/dashboard", label: "الإحصائيات", icon: "📊" },
   { href: "/dashboard/supply", label: "سبورة المستلزمات", icon: "📋" },
+  { href: "/dashboard/stationery", label: "الأدوات المكتبية", icon: "📎" },
   { href: "/dashboard/teacher", label: "صندوق المعلم", icon: "📦" },
   { href: "/dashboard/subscriptions", label: "اشتراكات المعلم", icon: "🧾" },
   { href: "/dashboard/preorder", label: "الطلب المسبق", icon: "🛒" },

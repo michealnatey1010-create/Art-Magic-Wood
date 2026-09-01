@@ -266,3 +266,31 @@ model Subscription {
 
   @@map("subscriptions")
 }
+
+model StationeryCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  order       Int      @default(0)
+  products    StationeryProduct[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("stationery_categories")
+}
+
+model StationeryProduct {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  image       String?
+  stock       Int      @default(0)
+  categoryId  String
+  category    StationeryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("stationery_products")
+}
