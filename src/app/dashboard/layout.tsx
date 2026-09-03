@@ -9,6 +9,7 @@ const sidebarItems = [
   { href: "/dashboard", label: "الإحصائيات", icon: "📊" },
   { href: "/dashboard/supply", label: "سبورة المستلزمات", icon: "📋" },
   { href: "/dashboard/stationery", label: "الأدوات المكتبية", icon: "📎" },
+  { href: "/dashboard/summaries", label: "الملخصات الخارجية", icon: "📚" },
   { href: "/dashboard/teacher", label: "صندوق المعلم", icon: "📦" },
   { href: "/dashboard/subscriptions", label: "اشتراكات المعلم", icon: "🧾" },
   { href: "/dashboard/preorder", label: "الطلب المسبق", icon: "🛒" },

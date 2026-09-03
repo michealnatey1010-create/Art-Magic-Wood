@@ -294,3 +294,55 @@ model StationeryProduct {
 
   @@map("stationery_products")
 }
+
+model AcademicLevel {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  order     Int      @default(0)
+  grades    Grade[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academic_levels")
+}
+
+model Grade {
+  id            String   @id @default(cuid())
+  name          String
+  levelId       String
+  level         AcademicLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  subjects      Subject[]
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("grades")
+}
+
+model Subject {
+  id            String   @id @default(cuid())
+  name          String
+  gradeId       String
+  grade         Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  summaries     ExternalSummary[]
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("subjects")
+}
+
+model ExternalSummary {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  image       String?
+  stock       Int      @default(0)
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("external_summaries")
+}
