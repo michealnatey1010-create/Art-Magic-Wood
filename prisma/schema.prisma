@@ -17,6 +17,9 @@ model User {
   points        Int      @default(0)
   school        String   @default("")
   storeLocation String   @default("")
+  referralCode     String?  @unique
+  referralActive   Boolean  @default(false)
+  referredBy       String?
   created_at    DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -26,6 +29,9 @@ model User {
   orders            Order[]
   cart              Cart?
   fcmTokens         FCMToken[]
+  referredUsers     Referral[]    @relation("referrer")
+  referredByUser    Referral[]    @relation("referred")
+  withdrawalRequests WithdrawalRequest[]
 }
 
 model Cart {
@@ -210,6 +216,7 @@ model Order {
   updatedAt    DateTime @updatedAt
 
   items        OrderItem[]
+  referral     Referral?
 
   @@map("orders")
 }
@@ -345,4 +352,47 @@ model ExternalSummary {
   updatedAt   DateTime @updatedAt
 
   @@map("external_summaries")
+}
+
+model Referral {
+  id                  String   @id @default(cuid())
+  referrerId          String
+  referredId          String
+  discountAmount      Float
+  pointsEarnedByReferrer Int
+  orderId             String?  @unique
+  createdAt           DateTime @default(now())
+
+  referrer            User     @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred            User     @relation("referred", fields: [referredId], references: [id], onDelete: Cascade)
+  order               Order?   @relation(fields: [orderId], references: [id])
+
+  @@map("referrals")
+}
+
+model WithdrawalRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Float
+  pointsUsed    Int
+  phoneNumber   String
+  bankName      String?
+  accountNumber String?
+  adminNotes    String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("withdrawal_requests")
+}
+
+model AppSettings {
+  id                   String   @id @default(cuid())
+  referralDiscount     Float    @default(50)
+  referralPointsPerUse Int      @default(30)
+  minWithdrawalAmount  Int      @default(100)
+  updatedAt            DateTime @updatedAt
+
+  @@map("app_settings")
 }

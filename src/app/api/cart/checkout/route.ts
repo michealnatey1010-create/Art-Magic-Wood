@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     console.log("🛒 Received checkout data:", body);
-    const { usePoints, receiptImage, address, phone, senderPhone, userName } = body;
+    const { usePoints, receiptImage, address, phone, senderPhone, userName, referralCode } = body;
     const pointsValue = parseInt(usePoints) || 0;
 
     console.log("📦 Received cart checkout data:");
@@ -36,50 +36,102 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "رصيد نقاط غير كافٍ" }, { status: 400 });
     }
     const pointsToUse = Math.min(pointsValue, Math.floor(total));
-    const finalPrice = total - pointsToUse;
+
+    let referralDiscount = 0;
+    let referrerId = null;
+    if (referralCode) {
+      const referrer = await prisma.user.findFirst({
+        where: { referralCode, referralActive: true },
+      });
+      if (referrer && referrer.id !== session.id) {
+        const alreadyUsed = await prisma.referral.findFirst({
+          where: { referredId: session.id, referrerId: referrer.id },
+        });
+        if (!alreadyUsed) {
+          const settings = await prisma.appSettings.findFirst();
+          referralDiscount = settings?.referralDiscount ?? 50;
+          referrerId = referrer.id;
+        }
+      }
+    }
+
+    const totalAfterPoints = total - pointsToUse;
+    const finalPrice = Math.max(0, totalAfterPoints - referralDiscount);
     const pointsEarned = Math.floor(total / 10);
     const newBalance = user.points - pointsToUse + pointsEarned;
 
-    await prisma.$transaction([
-      prisma.order.create({
-        data: {
-          userId: session.id,
-          source: "cart",
-          itemId: cart.id,
-          itemName: `سلة تسوق (${cart.items.length} منتجات)`,
-          price: total,
-          discount: pointsToUse,
-          pointsUsed: pointsToUse,
-          pointsEarned,
-          receiptImage: receiptImage || null,
-          address: address || null,
-          phone: phone || null,
-          senderPhone: senderPhone || null,
-          status: "pending",
-          items: {
-            create: cart.items.map((i) => ({
-              productName: i.productName,
-              price: i.price,
-              quantity: i.quantity,
-            })),
-          },
-        },
-      }),
+    const orderData: any = {
+      userId: session.id,
+      source: "cart",
+      itemId: cart.id,
+      itemName: `سلة تسوق (${cart.items.length} منتجات)`,
+      price: total,
+      discount: pointsToUse + referralDiscount,
+      pointsUsed: pointsToUse,
+      pointsEarned,
+      receiptImage: receiptImage || null,
+      address: address || null,
+      phone: phone || null,
+      senderPhone: senderPhone || null,
+      status: "pending",
+      items: {
+        create: cart.items.map((i) => ({
+          productName: i.productName,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      },
+    };
+
+    const prismaOps: any[] = [
+      prisma.order.create({ data: orderData }),
       prisma.cartItem.deleteMany({ where: { cart_id: cart.id } }),
       prisma.user.update({
         where: { id: session.id },
         data: { points: newBalance },
       }),
-    ]);
+    ];
+
+    await prisma.$transaction(prismaOps);
+
+    if (referrerId && referralDiscount > 0) {
+      const settings = await prisma.appSettings.findFirst();
+      const pointsForReferrer = settings?.referralPointsPerUse ?? 30;
+      const createdOrder = await prisma.order.findFirst({
+        where: { userId: session.id, source: "cart" },
+        orderBy: { createdAt: "desc" },
+      });
+
+      await prisma.$transaction([
+        prisma.referral.create({
+          data: {
+            referrerId,
+            referredId: session.id,
+            discountAmount: referralDiscount,
+            pointsEarnedByReferrer: pointsForReferrer,
+            orderId: createdOrder?.id || null,
+          },
+        }),
+        prisma.user.update({
+          where: { id: referrerId },
+          data: { points: { increment: pointsForReferrer } },
+        }),
+        prisma.user.update({
+          where: { id: session.id },
+          data: { referredBy: referrerId },
+        }),
+      ]);
+    }
 
     return NextResponse.json({
       success: true,
       message: "تم إتمام الطلب بنجاح",
       data: {
         orderTotal: total,
-        discount: pointsToUse,
+        discount: pointsToUse + referralDiscount,
         finalPrice,
         pointsUsed: pointsToUse,
+        referralDiscount,
         pointsEarned,
         newBalance,
       },

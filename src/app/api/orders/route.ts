@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   const data = await req.json();
   console.log("📦 Received order data:", data);
-  const { itemId, source, price, itemName, receiptImage, address, phone, senderPhone } = data;
+  const { itemId, source, price, itemName, receiptImage, address, phone, senderPhone, referralCode } = data;
   const usePoints = data.usePoints || 0; // عدد النقاط التي يريد استخدامها
 
   console.log("📦 Received order data:");
@@ -37,7 +37,27 @@ export async function POST(req: Request) {
 
   // حساب الخصم (كل نقطة = 1 جنيه)
   const discount = usePoints;
-  const finalPrice = Math.max(0, price - discount);
+
+  let referralDiscount = 0;
+  let referrerId = null;
+  if (referralCode) {
+    const referrer = await prisma.user.findFirst({
+      where: { referralCode, referralActive: true },
+    });
+    if (referrer && referrer.id !== session.id) {
+      const alreadyUsed = await prisma.referral.findFirst({
+        where: { referredId: session.id, referrerId: referrer.id },
+      });
+      if (!alreadyUsed) {
+        const settings = await prisma.appSettings.findFirst();
+        referralDiscount = settings?.referralDiscount ?? 50;
+        referrerId = referrer.id;
+      }
+    }
+  }
+
+  const totalDiscount = discount + referralDiscount;
+  const finalPrice = Math.max(0, price - totalDiscount);
 
   // حساب النقاط المكتسبة (مثلاً: 1 نقطة لكل 10 جنيهات)
   const pointsEarned = Math.floor(price / 10);
@@ -50,7 +70,7 @@ export async function POST(req: Request) {
       source,
       itemName,
       price,
-      discount,
+      discount: totalDiscount,
       pointsUsed: usePoints,
       pointsEarned,
       receiptImage: receiptImage || null,
@@ -65,12 +85,38 @@ export async function POST(req: Request) {
   });
 
   // تحديث رصيد النقاط: خصم النقاط المستخدمة + إضافة النقاط المكتسبة
-  await prisma.user.update({
-    where: { id: session.id },
-    data: {
-      points: user.points - usePoints + pointsEarned,
-    },
-  });
+  const updateOps: any[] = [
+    prisma.user.update({
+      where: { id: session.id },
+      data: { points: user.points - usePoints + pointsEarned },
+    }),
+  ];
+
+  if (referrerId && referralDiscount > 0) {
+    const settings = await prisma.appSettings.findFirst();
+    const pointsForReferrer = settings?.referralPointsPerUse ?? 30;
+    updateOps.push(
+      prisma.referral.create({
+        data: {
+          referrerId,
+          referredId: session.id,
+          discountAmount: referralDiscount,
+          pointsEarnedByReferrer: pointsForReferrer,
+          orderId: order.id,
+        },
+      }),
+      prisma.user.update({
+        where: { id: referrerId },
+        data: { points: { increment: pointsForReferrer } },
+      }),
+      prisma.user.update({
+        where: { id: session.id },
+        data: { referredBy: referrerId },
+      })
+    );
+  }
+
+  await prisma.$transaction(updateOps);
 
   return NextResponse.json({
     success: true,
@@ -78,6 +124,7 @@ export async function POST(req: Request) {
     orderId: order.id,
     finalPrice,
     pointsUsed: usePoints,
+    referralDiscount,
     pointsEarned,
     newBalance: user.points - usePoints + pointsEarned,
   });

@@ -17,6 +17,8 @@ const sidebarItems = [
   { href: "/dashboard/merchant-inventory", label: "مخزون التجار", icon: "📦" },
   { href: "/dashboard/proposals", label: "مقترحات الحزم", icon: Package },
   { href: "/dashboard/users", label: "المستخدمون", icon: "👥" },
+  { href: "/dashboard/referral/codes", label: "كود الإحالة", icon: "🔑" },
+  { href: "/dashboard/withdrawal/requests", label: "طلبات التحويل", icon: "💳" },
 ];
 
 function IconRender({ icon, collapsed }: { icon: any; collapsed: boolean }) {
