@@ -4,6 +4,16 @@ import { getSession } from "@/lib/auth";
 
 const PRODUCT_TYPES = ["STAGE", "PREORDER", "TEACHER_PACKAGE", "STATIONERY", "SUMMARY"];
 
+function normalizeProductType(type: string): string {
+  const t = (type || "").trim().toUpperCase();
+  if (t === "STAGE" || t === "STAGES") return "STAGE";
+  if (t === "PREORDER" || t === "PRE_ORDER" || t === "PREORDER_PRODUCT") return "PREORDER";
+  if (t === "TEACHER_PACKAGE" || t === "TEACHER" || t === "PACKAGE") return "TEACHER_PACKAGE";
+  if (t === "STATIONERY" || t === "STATIONERY_PRODUCT" || t === "OFFICE") return "STATIONERY";
+  if (t === "SUMMARY" || t === "SUMMARIES" || t === "EXTERNAL_SUMMARY" || t === "EXTERNAL_SUMMARIES") return "SUMMARY";
+  return t;
+}
+
 async function resolveProduct(productId: string, productType: string): Promise<{ name: string; price: number; image?: string } | null> {
   if (productType === "STAGE") {
     const p = await prisma.stage.findUnique({ where: { id: productId } });
@@ -92,11 +102,12 @@ export async function POST(req: NextRequest) {
     if (!productId || !productType) {
       return NextResponse.json({ success: false, message: "productId و productType مطلوبان" }, { status: 400 });
     }
-    if (!PRODUCT_TYPES.includes(productType)) {
-      return NextResponse.json({ success: false, message: "productType غير صالح" }, { status: 400 });
+    const normalizedType = normalizeProductType(productType);
+    if (!PRODUCT_TYPES.includes(normalizedType)) {
+      return NextResponse.json({ success: false, message: "productType غير صالح: " + productType }, { status: 400 });
     }
 
-    const product = await resolveProduct(productId, productType);
+    const product = await resolveProduct(productId, normalizedType);
     if (!product) {
       return NextResponse.json({ success: false, message: "المنتج غير موجود" }, { status: 404 });
     }
@@ -105,7 +116,7 @@ export async function POST(req: NextRequest) {
     const cart = await getOrCreateCart(session.id);
 
     const existing = await prisma.cartItem.findFirst({
-      where: { cart_id: cart.id, productId, productType },
+      where: { cart_id: cart.id, productId, productType: normalizedType },
     });
 
     if (existing) {
@@ -118,7 +129,7 @@ export async function POST(req: NextRequest) {
         data: {
           cart_id: cart.id,
           productId,
-          productType,
+          productType: normalizedType,
           productName: product.name,
           price: product.price,
           quantity: qty,
