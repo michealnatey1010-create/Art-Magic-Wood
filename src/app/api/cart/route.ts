@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
-const PRODUCT_TYPES = ["STAGE", "PREORDER", "TEACHER_PACKAGE"];
+const PRODUCT_TYPES = ["STAGE", "PREORDER", "TEACHER_PACKAGE", "STATIONERY"];
 
 async function resolveProduct(productId: string, productType: string): Promise<{ name: string; price: number; image?: string } | null> {
   if (productType === "STAGE") {
@@ -16,6 +16,10 @@ async function resolveProduct(productId: string, productType: string): Promise<{
   if (productType === "TEACHER_PACKAGE") {
     const p = await prisma.teacherPackage.findUnique({ where: { id: productId } });
     return p ? { name: p.name, price: p.monthly_price, image: p.image || undefined } : null;
+  }
+  if (productType === "STATIONERY") {
+    const p = await prisma.stationeryProduct.findUnique({ where: { id: productId } });
+    return p ? { name: p.name, price: p.price, image: p.image || undefined } : null;
   }
   return null;
 }
@@ -42,17 +46,20 @@ export async function GET(req: NextRequest) {
   const stageIds = rawItems.filter((i) => i.productType === "STAGE").map((i) => i.productId);
   const preorderIds = rawItems.filter((i) => i.productType === "PREORDER").map((i) => i.productId);
   const teacherIds = rawItems.filter((i) => i.productType === "TEACHER_PACKAGE").map((i) => i.productId);
+  const stationeryIds = rawItems.filter((i) => i.productType === "STATIONERY").map((i) => i.productId);
 
-  const [stages, preorders, teachers] = await Promise.all([
+  const [stages, preorders, teachers, stationeryProducts] = await Promise.all([
     stageIds.length ? prisma.stage.findMany({ where: { id: { in: stageIds } }, select: { id: true, coverImage: true } }) : [],
     preorderIds.length ? prisma.preorderProduct.findMany({ where: { id: { in: preorderIds } }, select: { id: true, image: true } }) : [],
     teacherIds.length ? prisma.teacherPackage.findMany({ where: { id: { in: teacherIds } }, select: { id: true, image: true } }) : [],
+    stationeryIds.length ? prisma.stationeryProduct.findMany({ where: { id: { in: stationeryIds } }, select: { id: true, image: true } }) : [],
   ]);
 
   const imageMap = new Map<string, string>();
   stages.forEach((s) => { if (s.coverImage) imageMap.set(`STAGE:${s.id}`, s.coverImage); });
   preorders.forEach((p) => { if (p.image) imageMap.set(`PREORDER:${p.id}`, p.image); });
   teachers.forEach((t) => { if (t.image) imageMap.set(`TEACHER_PACKAGE:${t.id}`, t.image); });
+  stationeryProducts.forEach((p) => { if (p.image) imageMap.set(`STATIONERY:${p.id}`, p.image); });
 
   const items = rawItems.map((i) => ({
     id: i.id,
