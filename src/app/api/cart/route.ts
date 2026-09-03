@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
-const PRODUCT_TYPES = ["STAGE", "PREORDER", "TEACHER_PACKAGE", "STATIONERY"];
+const PRODUCT_TYPES = ["STAGE", "PREORDER", "TEACHER_PACKAGE", "STATIONERY", "SUMMARY"];
 
 async function resolveProduct(productId: string, productType: string): Promise<{ name: string; price: number; image?: string } | null> {
   if (productType === "STAGE") {
@@ -19,6 +19,10 @@ async function resolveProduct(productId: string, productType: string): Promise<{
   }
   if (productType === "STATIONERY") {
     const p = await prisma.stationeryProduct.findUnique({ where: { id: productId } });
+    return p ? { name: p.name, price: p.price, image: p.image || undefined } : null;
+  }
+  if (productType === "SUMMARY") {
+    const p = await prisma.externalSummary.findUnique({ where: { id: productId } });
     return p ? { name: p.name, price: p.price, image: p.image || undefined } : null;
   }
   return null;
@@ -47,12 +51,14 @@ export async function GET(req: NextRequest) {
   const preorderIds = rawItems.filter((i) => i.productType === "PREORDER").map((i) => i.productId);
   const teacherIds = rawItems.filter((i) => i.productType === "TEACHER_PACKAGE").map((i) => i.productId);
   const stationeryIds = rawItems.filter((i) => i.productType === "STATIONERY").map((i) => i.productId);
+  const summaryIds = rawItems.filter((i) => i.productType === "SUMMARY").map((i) => i.productId);
 
-  const [stages, preorders, teachers, stationeryProducts] = await Promise.all([
+  const [stages, preorders, teachers, stationeryProducts, summaries] = await Promise.all([
     stageIds.length ? prisma.stage.findMany({ where: { id: { in: stageIds } }, select: { id: true, coverImage: true } }) : [],
     preorderIds.length ? prisma.preorderProduct.findMany({ where: { id: { in: preorderIds } }, select: { id: true, image: true } }) : [],
     teacherIds.length ? prisma.teacherPackage.findMany({ where: { id: { in: teacherIds } }, select: { id: true, image: true } }) : [],
     stationeryIds.length ? prisma.stationeryProduct.findMany({ where: { id: { in: stationeryIds } }, select: { id: true, image: true } }) : [],
+    summaryIds.length ? prisma.externalSummary.findMany({ where: { id: { in: summaryIds } }, select: { id: true, image: true } }) : [],
   ]);
 
   const imageMap = new Map<string, string>();
@@ -60,6 +66,7 @@ export async function GET(req: NextRequest) {
   preorders.forEach((p) => { if (p.image) imageMap.set(`PREORDER:${p.id}`, p.image); });
   teachers.forEach((t) => { if (t.image) imageMap.set(`TEACHER_PACKAGE:${t.id}`, t.image); });
   stationeryProducts.forEach((p) => { if (p.image) imageMap.set(`STATIONERY:${p.id}`, p.image); });
+  summaries.forEach((p) => { if (p.image) imageMap.set(`SUMMARY:${p.id}`, p.image); });
 
   const items = rawItems.map((i) => ({
     id: i.id,
