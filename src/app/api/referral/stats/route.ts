@@ -28,7 +28,13 @@ export async function GET(req: NextRequest) {
       discountAmount: user.referralDiscount ?? 50,
       pointsPerUse: user.referralPointsPerUse ?? 30,
       minWithdrawal: user.minWithdrawal ?? 100,
-      referrals,
+      referrals: referrals.map((r) => ({
+        id: r.id,
+        referredName: r.referred.name,
+        discountAmount: r.discountAmount,
+        pointsEarned: r.pointsEarnedByReferrer,
+        createdAt: r.createdAt,
+      })),
     });
   } catch (e) {
     console.error("Referral stats error:", e);
