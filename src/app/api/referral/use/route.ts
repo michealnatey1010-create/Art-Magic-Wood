@@ -12,10 +12,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "كود الإحالة ورقم الطلب مطلوبان" }, { status: 400 });
     }
 
-    const referrer = await prisma.user.findFirst({
-      where: { referralCode, referralActive: true },
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode },
+      select: {
+        id: true,
+        name: true,
+        points: true,
+        referralDiscount: true,
+        referralPointsPerUse: true,
+        referralActive: true,
+      },
     });
-    if (!referrer) {
+    if (!referrer || !referrer.referralActive) {
       return NextResponse.json({ error: "كود الإحالة غير صالح أو غير مفعّل" }, { status: 400 });
     }
     if (referrer.id === session.id) {
@@ -35,9 +43,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "هذا الطلب لا يخصك" }, { status: 403 });
     }
 
-    const settings = await prisma.appSettings.findFirst();
-    const discountAmount = settings?.referralDiscount ?? 50;
-    const pointsForReferrer = settings?.referralPointsPerUse ?? 30;
+    const discountAmount = referrer.referralDiscount ?? 50;
+    const pointsForReferrer = referrer.referralPointsPerUse ?? 30;
 
     await prisma.$transaction([
       prisma.referral.create({

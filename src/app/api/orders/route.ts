@@ -40,17 +40,19 @@ export async function POST(req: Request) {
 
   let referralDiscount = 0;
   let referrerId = null;
+  let pointsForReferrer = 0;
   if (referralCode) {
-    const referrer = await prisma.user.findFirst({
-      where: { referralCode, referralActive: true },
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode },
+      select: { id: true, referralActive: true, referralDiscount: true, referralPointsPerUse: true },
     });
-    if (referrer && referrer.id !== session.id) {
+    if (referrer && referrer.referralActive && referrer.id !== session.id) {
       const alreadyUsed = await prisma.referral.findFirst({
         where: { referredId: session.id, referrerId: referrer.id },
       });
       if (!alreadyUsed) {
-        const settings = await prisma.appSettings.findFirst();
-        referralDiscount = settings?.referralDiscount ?? 50;
+        referralDiscount = referrer.referralDiscount ?? 50;
+        pointsForReferrer = referrer.referralPointsPerUse ?? 30;
         referrerId = referrer.id;
       }
     }
@@ -93,8 +95,6 @@ export async function POST(req: Request) {
   ];
 
   if (referrerId && referralDiscount > 0) {
-    const settings = await prisma.appSettings.findFirst();
-    const pointsForReferrer = settings?.referralPointsPerUse ?? 30;
     updateOps.push(
       prisma.referral.create({
         data: {
