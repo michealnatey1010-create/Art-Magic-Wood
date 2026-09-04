@@ -12,14 +12,18 @@ function generateCode(name: string): string {
 
 export async function POST(req: NextRequest) {
   const session = await getSession(req);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ success: false, message: "غير مصرح" }, { status: 401 });
 
   try {
     const user = await prisma.user.findUnique({ where: { id: session.id } });
-    if (!user) return NextResponse.json({ error: "المستخدم غير موجود" }, { status: 404 });
+    if (!user) return NextResponse.json({ success: false, message: "المستخدم غير موجود" }, { status: 404 });
 
     if (user.referralCode) {
-      return NextResponse.json({ referralCode: user.referralCode, referralActive: user.referralActive });
+      return NextResponse.json({
+        success: true,
+        data: { code: user.referralCode, isActive: user.referralActive },
+        message: "الكود موجود مسبقاً",
+      });
     }
 
     let code = generateCode(user.name);
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
       attempts++;
     }
     if (exists) {
-      return NextResponse.json({ error: "تعذر إنشاء كود فريد، حاول مرة أخرى" }, { status: 500 });
+      return NextResponse.json({ success: false, message: "تعذر إنشاء كود فريد، حاول مرة أخرى" }, { status: 500 });
     }
 
     await prisma.user.update({
@@ -39,9 +43,13 @@ export async function POST(req: NextRequest) {
       data: { referralCode: code },
     });
 
-    return NextResponse.json({ referralCode: code, referralActive: false });
+    return NextResponse.json({
+      success: true,
+      data: { code, isActive: false },
+      message: "تم توليد كود الإحالة بنجاح",
+    });
   } catch (e) {
     console.error("Generate referral code error:", e);
-    return NextResponse.json({ error: "حدث خطأ" }, { status: 500 });
+    return NextResponse.json({ success: false, message: "حدث خطأ" }, { status: 500 });
   }
 }
