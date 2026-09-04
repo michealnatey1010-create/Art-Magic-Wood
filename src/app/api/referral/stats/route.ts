@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
       totalReferrals: referrals.length,
       totalPoints,
       totalDiscount,
+      discountAmount: user.referralDiscount ?? 50,
+      pointsPerUse: user.referralPointsPerUse ?? 30,
+      minWithdrawal: user.minWithdrawal ?? 100,
       referrals,
     });
   } catch (e) {
