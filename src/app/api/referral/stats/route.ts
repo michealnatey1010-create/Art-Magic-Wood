@@ -20,21 +20,24 @@ export async function GET(req: NextRequest) {
     const totalDiscount = referrals.reduce((sum, r) => sum + r.discountAmount, 0);
 
     return NextResponse.json({
-      referralCode: user.referralCode,
-      referralActive: user.referralActive,
-      totalReferrals: referrals.length,
-      totalPoints,
-      totalDiscount,
-      discountAmount: user.referralDiscount ?? 50,
-      pointsPerUse: user.referralPointsPerUse ?? 30,
-      minWithdrawal: user.minWithdrawal ?? 100,
-      referrals: referrals.map((r) => ({
-        id: r.id,
-        referredName: r.referred.name,
-        discountAmount: r.discountAmount,
-        pointsEarned: r.pointsEarnedByReferrer,
-        createdAt: r.createdAt,
-      })),
+      success: true,
+      data: {
+        totalReferrals: referrals.length,
+        totalPoints,
+        totalDiscount,
+        discountAmount: user.referralDiscount ?? 50,
+        pointsPerUse: user.referralPointsPerUse ?? 30,
+        minWithdrawal: user.minWithdrawal ?? 100,
+        referralCode: user.referralCode,
+        referralActive: user.referralActive,
+        referrals: referrals.map((r) => ({
+          id: r.id,
+          referredName: r.referred.name,
+          discountAmount: r.discountAmount,
+          pointsEarned: r.pointsEarnedByReferrer,
+          createdAt: r.createdAt,
+        })),
+      },
     });
   } catch (e) {
     console.error("Referral stats error:", e);
