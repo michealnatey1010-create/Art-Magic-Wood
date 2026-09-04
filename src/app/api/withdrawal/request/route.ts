@@ -16,8 +16,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return NextResponse.json({ error: "المستخدم غير موجود" }, { status: 404 });
 
-    const settings = await prisma.appSettings.findFirst();
-    const minAmount = settings?.minWithdrawalAmount ?? 100;
+    const minAmount = user.minWithdrawal ?? 100;
 
     if (amount < minAmount) {
       return NextResponse.json({ error: `الحد الأدنى للتحويل هو ${minAmount} نقطة` }, { status: 400 });

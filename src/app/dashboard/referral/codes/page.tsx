@@ -10,6 +10,7 @@ interface Teacher {
   referralActive: boolean;
   referralDiscount: number;
   referralPointsPerUse: number;
+  minWithdrawal: number;
 }
 
 export default function ReferralCodesPage() {
@@ -18,6 +19,7 @@ export default function ReferralCodesPage() {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [discount, setDiscount] = useState(50);
   const [pointsPerUse, setPointsPerUse] = useState(30);
+  const [minWithdrawal, setMinWithdrawal] = useState(100);
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -55,6 +57,7 @@ export default function ReferralCodesPage() {
     setEditingTeacher(teacher);
     setDiscount(teacher.referralDiscount ?? 50);
     setPointsPerUse(teacher.referralPointsPerUse ?? 30);
+    setMinWithdrawal(teacher.minWithdrawal ?? 100);
   };
 
   const saveSettings = async () => {
@@ -67,6 +70,7 @@ export default function ReferralCodesPage() {
           userId: editingTeacher.id,
           discount,
           pointsPerUse,
+          minWithdrawal,
         }),
       });
       if (res.ok) {
@@ -95,6 +99,7 @@ export default function ReferralCodesPage() {
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">كود الإحالة</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">خصم الطالب (ج.م)</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">نقاط المعلم</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحد الأدنى للسحب</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
             </tr>
@@ -109,6 +114,7 @@ export default function ReferralCodesPage() {
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">{teacher.referralDiscount ?? 50} ج.م</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{teacher.referralPointsPerUse ?? 30} نقطة</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{teacher.minWithdrawal ?? 100} نقطة</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                     teacher.referralActive
@@ -170,6 +176,15 @@ export default function ReferralCodesPage() {
                   type="number"
                   value={pointsPerUse}
                   onChange={(e) => setPointsPerUse(Number(e.target.value))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">الحد الأدنى للسحب (نقطة)</label>
+                <input
+                  type="number"
+                  value={minWithdrawal}
+                  onChange={(e) => setMinWithdrawal(Number(e.target.value))}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>

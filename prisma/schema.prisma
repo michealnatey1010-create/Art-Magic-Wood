@@ -21,6 +21,7 @@ model User {
   referralActive        Boolean  @default(false)
   referralDiscount      Float    @default(50)
   referralPointsPerUse  Int      @default(30)
+  minWithdrawal         Int      @default(100)
   referredBy            String?
   created_at    DateTime @default(now())
   updated_at DateTime @updatedAt

@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { userId, discount, pointsPerUse } = await req.json();
+  const { userId, discount, pointsPerUse, minWithdrawal } = await req.json();
 
   if (!userId || discount === undefined || pointsPerUse === undefined) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -19,6 +19,7 @@ export async function PATCH(req: NextRequest) {
     data: {
       referralDiscount: discount,
       referralPointsPerUse: pointsPerUse,
+      ...(minWithdrawal !== undefined ? { minWithdrawal } : {}),
     },
   });
 
