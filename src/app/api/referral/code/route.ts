@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
       select: {
         referralCode: true,
         referralActive: true,
+        referralDiscount: true,
+        referralPointsPerUse: true,
+        minWithdrawal: true,
       },
     });
 
@@ -40,6 +43,9 @@ export async function GET(req: NextRequest) {
         data: {
           code: updatedUser.referralCode,
           isActive: updatedUser.referralActive || false,
+          discountAmount: updatedUser.referralDiscount ?? 50,
+          pointsPerUse: updatedUser.referralPointsPerUse ?? 30,
+          minWithdrawal: updatedUser.minWithdrawal ?? 100,
         },
         message: 'تم توليد كود إحالة جديد',
       });
@@ -50,6 +56,9 @@ export async function GET(req: NextRequest) {
       data: {
         code: user.referralCode,
         isActive: user.referralActive || false,
+        discountAmount: user.referralDiscount ?? 50,
+        pointsPerUse: user.referralPointsPerUse ?? 30,
+        minWithdrawal: user.minWithdrawal ?? 100,
       },
       message: 'تم جلب كود الإحالة بنجاح',
     });
