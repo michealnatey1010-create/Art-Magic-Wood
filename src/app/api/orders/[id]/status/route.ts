@@ -53,6 +53,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       },
     });
 
+    // منح نقاط المعلم عند تأكيد الدفع فقط (لا قبل التاكيد)
+    const referral = order.referralId
+      ? await prisma.referral.findUnique({ where: { id: order.referralId } })
+      : await prisma.referral.findFirst({ where: { orderId: order.id } });
+
+    if (referral && referral.status === "pending") {
+      if (status === "confirmed" || status === "delivered") {
+        await prisma.$transaction([
+          prisma.referral.update({
+            where: { id: referral.id },
+            data: { status: "confirmed" },
+          }),
+          prisma.user.update({
+            where: { id: referral.referrerId },
+            data: { points: { increment: referral.pointsEarnedByReferrer } },
+          }),
+        ]);
+      } else if (status === "cancelled") {
+        await prisma.referral.update({
+          where: { id: referral.id },
+          data: { status: "cancelled" },
+        });
+      }
+    }
+
     // إرسال إشعار FCM إلى جهاز المستخدم
     let notification: { title: string; body: string } | null = null;
     if (status === "confirmed") {

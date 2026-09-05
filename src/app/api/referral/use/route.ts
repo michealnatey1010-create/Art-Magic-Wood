@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     const existingReferral = await prisma.referral.findFirst({
-      where: { referredId: session.id, referrerId: referrer.id },
+      where: { referredId: session.id, referrerId: referrer.id, status: { in: ["pending", "confirmed"] } },
       select: { id: true },
     });
     if (existingReferral) {

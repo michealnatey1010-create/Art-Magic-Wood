@@ -23,8 +23,12 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const totalPoints = referrals.reduce((sum, r) => sum + r.pointsEarnedByReferrer, 0);
-    const totalDiscount = referrals.reduce((sum, r) => sum + r.discountAmount, 0);
+    const totalPoints = referrals
+      .filter((r) => r.status === "confirmed")
+      .reduce((sum, r) => sum + r.pointsEarnedByReferrer, 0);
+    const totalDiscount = referrals
+      .filter((r) => r.status === "confirmed")
+      .reduce((sum, r) => sum + r.discountAmount, 0);
 
     return NextResponse.json({
       success: true,
@@ -42,6 +46,7 @@ export async function GET(req: NextRequest) {
           referredName: r.referred.name,
           discountAmount: r.discountAmount,
           pointsEarned: r.pointsEarnedByReferrer,
+          status: r.status,
           createdAt: r.createdAt,
         })),
       },

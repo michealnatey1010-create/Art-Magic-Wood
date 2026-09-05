@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     });
     if (referrer && referrer.referralActive && referrer.id !== session.id) {
       const alreadyUsed = await prisma.referral.findFirst({
-        where: { referredId: session.id, referrerId: referrer.id },
+        where: { referredId: session.id, referrerId: referrer.id, status: { in: ["pending", "confirmed"] } },
       });
       if (!alreadyUsed) {
         referralDiscount = referrer.referralDiscount ?? 50;
@@ -95,19 +95,20 @@ export async function POST(req: Request) {
   ];
 
   if (referrerId && referralDiscount > 0) {
+    const newReferral = await prisma.referral.create({
+      data: {
+        referrerId,
+        referredId: session.id,
+        discountAmount: referralDiscount,
+        pointsEarnedByReferrer: pointsForReferrer,
+        orderId: order.id,
+        status: "pending",
+      },
+    });
     updateOps.push(
-      prisma.referral.create({
-        data: {
-          referrerId,
-          referredId: session.id,
-          discountAmount: referralDiscount,
-          pointsEarnedByReferrer: pointsForReferrer,
-          orderId: order.id,
-        },
-      }),
-      prisma.user.update({
-        where: { id: referrerId },
-        data: { points: { increment: pointsForReferrer } },
+      prisma.order.update({
+        where: { id: order.id },
+        data: { referralId: newReferral.id },
       }),
       prisma.user.update({
         where: { id: session.id },

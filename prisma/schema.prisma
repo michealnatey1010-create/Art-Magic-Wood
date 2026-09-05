@@ -219,7 +219,8 @@ model Order {
   updatedAt    DateTime @updatedAt
 
   items        OrderItem[]
-  referral     Referral?
+  referralId   String?    @unique
+  referral     Referral?  @relation("OrderReferralLink", fields: [referralId], references: [id])
 
   @@map("orders")
 }
@@ -361,14 +362,16 @@ model Referral {
   id                  String   @id @default(cuid())
   referrerId          String
   referredId          String
+  orderId             String?
   discountAmount      Float
   pointsEarnedByReferrer Int
-  orderId             String?  @unique
+  status              String   @default("pending") // pending, confirmed, cancelled
   createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now()) @updatedAt
 
   referrer            User     @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
   referred            User     @relation("referred", fields: [referredId], references: [id], onDelete: Cascade)
-  order               Order?   @relation(fields: [orderId], references: [id])
+  orderReferral       Order?   @relation("OrderReferralLink")
 
   @@map("referrals")
 }

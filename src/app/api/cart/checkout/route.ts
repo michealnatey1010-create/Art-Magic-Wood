@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       });
       if (referrer && referrer.referralActive && referrer.id !== session.id) {
         const alreadyUsed = await prisma.referral.findFirst({
-          where: { referredId: session.id, referrerId: referrer.id },
+          where: { referredId: session.id, referrerId: referrer.id, status: { in: ["pending", "confirmed"] } },
         });
         if (!alreadyUsed) {
           referralDiscount = referrer.referralDiscount ?? 50;
@@ -90,8 +90,9 @@ export async function POST(req: NextRequest) {
       },
     };
 
+    const order = await prisma.order.create({ data: orderData });
+
     const prismaOps: any[] = [
-      prisma.order.create({ data: orderData }),
       prisma.cartItem.deleteMany({ where: { cart_id: cart.id } }),
       prisma.user.update({
         where: { id: session.id },
@@ -99,34 +100,30 @@ export async function POST(req: NextRequest) {
       }),
     ];
 
-    await prisma.$transaction(prismaOps);
-
     if (referrerId && referralDiscount > 0) {
-      const createdOrder = await prisma.order.findFirst({
-        where: { userId: session.id, source: "cart" },
-        orderBy: { createdAt: "desc" },
+      const newReferral = await prisma.referral.create({
+        data: {
+          referrerId,
+          referredId: session.id,
+          discountAmount: referralDiscount,
+          pointsEarnedByReferrer: pointsForReferrer,
+          orderId: order.id,
+          status: "pending",
+        },
       });
-
-      await prisma.$transaction([
-        prisma.referral.create({
-          data: {
-            referrerId,
-            referredId: session.id,
-            discountAmount: referralDiscount,
-            pointsEarnedByReferrer: pointsForReferrer,
-            orderId: createdOrder?.id || null,
-          },
-        }),
-        prisma.user.update({
-          where: { id: referrerId },
-          data: { points: { increment: pointsForReferrer } },
+      prismaOps.push(
+        prisma.order.update({
+          where: { id: order.id },
+          data: { referralId: newReferral.id },
         }),
         prisma.user.update({
           where: { id: session.id },
           data: { referredBy: referrerId },
-        }),
-      ]);
+        })
+      );
     }
+
+    await prisma.$transaction(prismaOps);
 
     return NextResponse.json({
       success: true,
