@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return NextResponse.json({ success: false, message: "المستخدم غير موجود" }, { status: 404 });
 
+    if (user.role !== "TEACHER") {
+      return NextResponse.json({ success: false, message: "خصم الإحالة مخصص للمعلمين فقط" }, { status: 403 });
+    }
+
     if (user.referralCode) {
       return NextResponse.json({
         success: true,
