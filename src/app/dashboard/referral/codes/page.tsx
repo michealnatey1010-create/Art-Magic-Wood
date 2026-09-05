@@ -13,6 +13,17 @@ interface Teacher {
   minWithdrawal: number;
 }
 
+interface ReferralInfo {
+  id: string;
+  referredName: string;
+  referredEmail: string;
+  referredPhone: string | null;
+  discountAmount: number;
+  pointsEarnedByReferrer: number;
+  status: string;
+  createdAt: string;
+}
+
 export default function ReferralCodesPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +31,9 @@ export default function ReferralCodesPage() {
   const [discount, setDiscount] = useState(50);
   const [pointsPerUse, setPointsPerUse] = useState(30);
   const [minWithdrawal, setMinWithdrawal] = useState(100);
+  const [expandedTeacher, setExpandedTeacher] = useState<string | null>(null);
+  const [referrals, setReferrals] = useState<Record<string, ReferralInfo[]>>({});
+  const [loadingReferrals, setLoadingReferrals] = useState<string | null>(null);
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -84,6 +98,64 @@ export default function ReferralCodesPage() {
     }
   };
 
+  const toggleExpand = async (teacherId: string) => {
+    if (expandedTeacher === teacherId) {
+      setExpandedTeacher(null);
+      return;
+    }
+    setExpandedTeacher(teacherId);
+    if (!referrals[teacherId]) {
+      setLoadingReferrals(teacherId);
+      try {
+        const res = await fetch(`/api/referral/all?referrerId=${teacherId}`);
+        const data = await res.json();
+        setReferrals((prev) => ({ ...prev, [teacherId]: data.data || [] }));
+      } catch (e) {
+        console.error("Error fetching referrals:", e);
+      } finally {
+        setLoadingReferrals(null);
+      }
+    }
+  };
+
+  const reactivateReferral = async (referralId: string, teacherId: string) => {
+    try {
+      const res = await fetch("/api/referral/reactivate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReferrals((prev) => ({
+          ...prev,
+          [teacherId]: (prev[teacherId] || []).map((r) =>
+            r.id === referralId ? { ...r, status: "reactivated" } : r
+          ),
+        }));
+      } else {
+        alert(data.error || "فشلت عملية إعادة التفعيل");
+      }
+    } catch {
+      alert("حدث خطأ أثناء إعادة التفعيل");
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">مؤكد</span>;
+      case "pending":
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">قيد المعالجة</span>;
+      case "reactivated":
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">أعيد تفعيله</span>;
+      case "cancelled":
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">ملغي</span>;
+      default:
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">{status}</span>;
+    }
+  };
+
   if (loading) return <div className="text-center py-8">جاري التحميل...</div>;
 
   return (
@@ -106,7 +178,8 @@ export default function ReferralCodesPage() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {teachers.map((teacher) => (
-              <tr key={teacher.id} className="hover:bg-gray-50">
+              <React.Fragment key={teacher.id}>
+              <tr className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{teacher.name}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{teacher.email}</td>
                 <td className="px-6 py-4 text-sm font-mono font-bold text-blue-600">
@@ -142,9 +215,76 @@ export default function ReferralCodesPage() {
                     >
                       {teacher.referralActive ? "تعطيل" : "تفعيل"}
                     </button>
+                    <button
+                      onClick={() => toggleExpand(teacher.id)}
+                      className={`px-3 py-1 text-sm rounded ${
+                        expandedTeacher === teacher.id
+                          ? "bg-purple-600 text-white"
+                          : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                      }`}
+                    >
+                      {expandedTeacher === teacher.id ? "إغلاق" : "المستخدمون"}
+                    </button>
                   </div>
                 </td>
               </tr>
+              {expandedTeacher === teacher.id && (
+                <tr>
+                  <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                    {loadingReferrals === teacher.id ? (
+                      <div className="text-center py-4 text-sm text-gray-500">جاري التحميل...</div>
+                    ) : (referrals[teacher.id] || []).length === 0 ? (
+                      <div className="text-center py-4 text-sm text-gray-500">
+                        لا يوجد طلاب استخدموا الكود حتى الآن
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-right text-xs text-gray-500 border-b border-gray-200">
+                              <th className="py-2 px-3 font-medium">الطالب</th>
+                              <th className="py-2 px-3 font-medium">البريد</th>
+                              <th className="py-2 px-3 font-medium">الخصم</th>
+                              <th className="py-2 px-3 font-medium">النقاط</th>
+                              <th className="py-2 px-3 font-medium">الحالة</th>
+                              <th className="py-2 px-3 font-medium">التاريخ</th>
+                              <th className="py-2 px-3 font-medium">إجراء</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(referrals[teacher.id] || []).map((r) => (
+                              <tr key={r.id} className="border-b border-gray-100">
+                                <td className="py-2 px-3 font-medium text-gray-900">{r.referredName}</td>
+                                <td className="py-2 px-3 text-gray-500">{r.referredEmail}</td>
+                                <td className="py-2 px-3">{r.discountAmount} ج.م</td>
+                                <td className="py-2 px-3">{r.pointsEarnedByReferrer} نقطة</td>
+                                <td className="py-2 px-3">{statusBadge(r.status)}</td>
+                                <td className="py-2 px-3 text-gray-500">
+                                  {new Date(r.createdAt).toLocaleDateString("ar-EG")}
+                                </td>
+                                <td className="py-2 px-3">
+                                  {r.status !== "pending" && (
+                                    <button
+                                      onClick={() => reactivateReferral(r.id, teacher.id)}
+                                      disabled={r.status === "reactivated"}
+                                      className="px-3 py-1 text-xs rounded bg-purple-100 text-purple-700 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {r.status === "reactivated"
+                                        ? "أعيد تفعيله ✓"
+                                        : "إعادة تفعيل الاستخدام"}
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
